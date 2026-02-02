@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2025-02-02)
 ## Current Position
 
 Phase: 3 of 8 (Source/Sink Runtimes)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-02-02 - Completed 03-01-PLAN.md
+Last activity: 2026-02-02 - Completed 03-02-PLAN.md
 
-Progress: [███████████░░░░░░░░░] 28%
+Progress: [████████████░░░░░░░░] 31%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 9
+- Total plans completed: 10
 - Average duration: 4 min
-- Total execution time: 0.6 hours
+- Total execution time: 0.7 hours
 
 **By Phase:**
 
@@ -29,10 +29,10 @@ Progress: [███████████░░░░░░░░░] 28%
 |-------|-------|-------|----------|
 | 01-foundation | 5 | 22 min | 4 min |
 | 02-expression-execution-core | 3 | 10 min | 3.3 min |
-| 03-source-sink-runtimes | 1 | 3 min | 3 min |
+| 03-source-sink-runtimes | 2 | 5 min | 2.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-05 (3 min), 02-01 (4 min), 02-02 (3 min), 02-03 (3 min), 03-01 (3 min)
+- Last 5 plans: 02-01 (4 min), 02-02 (3 min), 02-03 (3 min), 03-01 (3 min), 03-02 (2 min)
 - Trend: Stable/Improving
 
 *Updated after each plan completion*
@@ -74,6 +74,10 @@ Recent decisions affecting current work:
 - [03-01]: HttpError.isRetryable returns true for 429 and 5xx status codes
 - [03-01]: Object.setPrototypeOf in error constructors for proper prototype chain
 - [03-01]: RuntimeRegistry uses Map internally for O(1) lookup
+- [03-02]: JMESPath extraction at source level via config.extract
+- [03-02]: Separate registry.ts to avoid circular imports (http -> registry, not http -> index)
+- [03-02]: Default timeout 30 seconds for HTTP operations
+- [03-02]: Sink returns metadata (status, statusText, headers), not response body
 
 ### Pending Todos
 
@@ -86,7 +90,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-02
-Stopped at: Completed 03-01-PLAN.md
+Stopped at: Completed 03-02-PLAN.md
 Resume file: None
 
 ## Phase Commits

@@ -15,6 +15,7 @@
   "devDependencies": {
     "@types/babel__code-frame": "^7.27.0",
     "@types/bun": "latest",
+    "@types/luxon": "^3.7.1",
     "@types/node": "^25.2.0",
     "typescript": "^5.9.3"
   },
@@ -24,6 +25,7 @@
     "commander": "^14.0.3",
     "fast-xml-parser": "^5.3.4",
     "jsep": "^1.4.0",
+    "luxon": "^3.7.2",
     "zod": "^4.3.6"
   }
 }

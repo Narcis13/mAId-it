@@ -67,15 +67,16 @@ Plans:
   1. HTTP source makes GET requests with headers, params, and bearer auth
   2. HTTP source makes POST requests with JSON body
   3. HTTP sink posts data to external endpoints
-  4. HTTP nodes extract response data via JSONPath
+  4. HTTP nodes extract response data via JMESPath
   5. File source reads JSON and text files
   6. File sink writes JSON and text files
   7. File paths support template expressions like `{{config.outputDir}}/result.json`
-**Plans**: TBD
+**Plans**: 3 plans (2 waves)
 
 Plans:
-- [ ] 03-01: TBD
-- [ ] 03-02: TBD
+- [ ] 03-01-PLAN.md — Runtime infrastructure (NodeRuntime interface, error classes, registry)
+- [ ] 03-02-PLAN.md — HTTP source and sink runtimes (GET/POST, auth, JMESPath extraction)
+- [ ] 03-03-PLAN.md — File source and sink runtimes (JSON/text, template paths, security)
 
 ### Phase 4: AI Integration
 **Goal**: Users can call AI models with structured output validation
@@ -173,9 +174,9 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 5/5 | ✓ Complete | 2026-02-02 |
-| 2. Expression & Execution Core | 3/3 | ✓ Complete | 2026-02-02 |
-| 3. Source/Sink Runtimes | 0/2 | Not started | - |
+| 1. Foundation | 5/5 | Complete | 2026-02-02 |
+| 2. Expression & Execution Core | 3/3 | Complete | 2026-02-02 |
+| 3. Source/Sink Runtimes | 0/3 | Planned | - |
 | 4. AI Integration | 0/2 | Not started | - |
 | 5. Transform & Control Flow | 0/3 | Not started | - |
 | 6. Scheduling & Parallelism | 0/2 | Not started | - |

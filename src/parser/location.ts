@@ -39,7 +39,8 @@ export function offsetToPosition(offset: number, lineOffsets: number[]): Positio
 
   while (low < high) {
     const mid = Math.ceil((low + high) / 2);
-    if (lineOffsets[mid] <= offset) {
+    const midOffset = lineOffsets[mid];
+    if (midOffset !== undefined && midOffset <= offset) {
       low = mid;
     } else {
       high = mid - 1;
@@ -47,7 +48,8 @@ export function offsetToPosition(offset: number, lineOffsets: number[]): Positio
   }
 
   const line = low + 1; // 1-indexed
-  const column = offset - lineOffsets[low]; // 0-indexed
+  const lineStart = lineOffsets[low] ?? 0;
+  const column = offset - lineStart; // 0-indexed
 
   return { line, column, offset };
 }

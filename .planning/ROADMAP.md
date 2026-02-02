@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation** - Parser, validator, and basic CLI for validation loop
 - [x] **Phase 2: Expression & Execution Core** - Expression evaluator and executor framework
-- [ ] **Phase 3: Source/Sink Runtimes** - HTTP and File runtimes proving the pattern
+- [x] **Phase 3: Source/Sink Runtimes** - HTTP and File runtimes proving the pattern
 - [ ] **Phase 4: AI Integration** - OpenRouter AI runtime with schema validation
 - [ ] **Phase 5: Transform & Control Flow** - Transform nodes and control flow constructs
 - [ ] **Phase 6: Scheduling & Parallelism** - DAG scheduler and wave-based parallel execution
@@ -74,9 +74,9 @@ Plans:
 **Plans**: 3 plans (2 waves)
 
 Plans:
-- [ ] 03-01-PLAN.md — Runtime infrastructure (NodeRuntime interface, error classes, registry)
-- [ ] 03-02-PLAN.md — HTTP source and sink runtimes (GET/POST, auth, JMESPath extraction)
-- [ ] 03-03-PLAN.md — File source and sink runtimes (JSON/text, template paths, security)
+- [x] 03-01-PLAN.md — Runtime infrastructure (NodeRuntime interface, error classes, registry)
+- [x] 03-02-PLAN.md — HTTP source and sink runtimes (GET/POST, auth, JMESPath extraction)
+- [x] 03-03-PLAN.md — File source and sink runtimes (JSON/text, template paths, security)
 
 ### Phase 4: AI Integration
 **Goal**: Users can call AI models with structured output validation
@@ -176,7 +176,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 |-------|----------------|--------|-----------|
 | 1. Foundation | 5/5 | Complete | 2026-02-02 |
 | 2. Expression & Execution Core | 3/3 | Complete | 2026-02-02 |
-| 3. Source/Sink Runtimes | 0/3 | Planned | - |
+| 3. Source/Sink Runtimes | 3/3 | Complete | 2026-02-02 |
 | 4. AI Integration | 0/2 | Not started | - |
 | 5. Transform & Control Flow | 0/3 | Not started | - |
 | 6. Scheduling & Parallelism | 0/2 | Not started | - |

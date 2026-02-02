@@ -5,33 +5,33 @@
 See: .planning/PROJECT.md (updated 2025-02-02)
 
 **Core value:** Execute living markdown files as powerful, type-safe workflow programs with AI woven into every layer
-**Current focus:** Phase 2 - Expression & Execution Core (In progress)
+**Current focus:** Phase 2 - Expression & Execution Core (Complete)
 
 ## Current Position
 
 Phase: 2 of 8 (Expression & Execution Core)
-Plan: 2 of 3 in current phase
-Status: In progress
-Last activity: 2026-02-02 - Completed 02-02-PLAN.md (Built-in Functions Library)
+Plan: 3 of 3 in current phase
+Status: Phase complete
+Last activity: 2026-02-02 - Completed 02-03-PLAN.md (Context Hierarchy & Execution State)
 
-Progress: [███████░░░] 18%
+Progress: [████████░░] 21%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 7
+- Total plans completed: 8
 - Average duration: 4 min
-- Total execution time: 0.48 hours
+- Total execution time: 0.55 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-foundation | 5 | 22 min | 4 min |
-| 02-expression-execution-core | 2 | 7 min | 3.5 min |
+| 02-expression-execution-core | 3 | 10 min | 3.3 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-03 (5 min), 01-04 (2 min), 01-05 (3 min), 02-01 (4 min), 02-02 (3 min)
+- Last 5 plans: 01-04 (2 min), 01-05 (3 min), 02-01 (4 min), 02-02 (3 min), 02-03 (3 min)
 - Trend: Stable/Improving
 
 *Updated after each plan completion*
@@ -65,6 +65,10 @@ Recent decisions affecting current work:
 - [02-02]: Luxon for date/time operations (ESM-native, robust timezone handling)
 - [02-02]: All 115 functions null-safe - return defaults instead of throwing
 - [02-02]: Central registry pattern: getBuiltinFunctions() returns flat Record<string, Function>
+- [02-03]: Context hierarchy: node > phase > global via Object.assign order
+- [02-03]: Node outputs exposed as nodeId.output pattern for expression access
+- [02-03]: Secret redaction: show keys only, replace values with [REDACTED]
+- [02-03]: null/undefined render as empty string in templates (cleaner output)
 
 ### Pending Todos
 
@@ -77,7 +81,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-02
-Stopped at: Completed 02-02-PLAN.md (Built-in Functions Library)
+Stopped at: Completed 02-03-PLAN.md (Context Hierarchy & Execution State)
 Resume file: None
 
 ## Phase Commits

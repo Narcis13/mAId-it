@@ -33,12 +33,14 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Parser extracts XML body into node AST with source locations preserved
   4. Malformed YAML/XML produces clear error messages with line numbers
   5. Validator catches missing required fields, undefined node references, undeclared secrets, duplicate IDs, and circular dependencies
-**Plans**: 3 plans in 3 waves
+**Plans**: 5 plans (3 core + 2 gap closure)
 
 Plans:
-- [ ] 01-01-PLAN.md — Project setup, dependencies, and AST type definitions
-- [ ] 01-02-PLAN.md — Parser implementation (YAML frontmatter, XML body, source locations)
-- [ ] 01-03-PLAN.md — Validator and CLI validate command with error formatting
+- [x] 01-01-PLAN.md — Project setup, dependencies, and AST type definitions
+- [x] 01-02-PLAN.md — Parser implementation (YAML frontmatter, XML body, source locations)
+- [x] 01-03-PLAN.md — Validator and CLI validate command with error formatting
+- [ ] 01-04-PLAN.md — [GAP CLOSURE] Fix secret reference validation
+- [ ] 01-05-PLAN.md — [GAP CLOSURE] Add semver validation to version field
 
 ### Phase 2: Expression & Execution Core
 **Goal**: Users can see expressions evaluated and basic sequential execution work
@@ -170,7 +172,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/3 | Planned | - |
+| 1. Foundation | 3/5 | Gap closure | - |
 | 2. Expression & Execution Core | 0/2 | Not started | - |
 | 3. Source/Sink Runtimes | 0/2 | Not started | - |
 | 4. AI Integration | 0/2 | Not started | - |

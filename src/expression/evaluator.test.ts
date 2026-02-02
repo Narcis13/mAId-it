@@ -354,12 +354,12 @@ describe('evaluateTemplate', () => {
     ).toBe('positive');
   });
 
-  test('handles null values', () => {
-    expect(evaluateTemplate('Value: {{x}}', ctx({ x: null }))).toBe('Value: null');
+  test('handles null values (renders as empty)', () => {
+    expect(evaluateTemplate('Value: {{x}}', ctx({ x: null }))).toBe('Value: ');
   });
 
-  test('handles undefined values', () => {
-    expect(evaluateTemplate('Value: {{x}}', ctx())).toBe('Value: undefined');
+  test('handles undefined values (renders as empty)', () => {
+    expect(evaluateTemplate('Value: {{x}}', ctx())).toBe('Value: ');
   });
 
   test('handles object values (JSON stringified)', () => {

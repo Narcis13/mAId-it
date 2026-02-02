@@ -20,10 +20,21 @@ export { extractTemplateSegments, parseExpression } from './parser.ts';
 // Re-export evaluator functions
 export { evaluate, evaluateNode } from './evaluator.ts';
 
+// Re-export context utilities
+export {
+  buildEvaluationContext,
+  createEvalContext,
+  redactSecrets,
+  contextToString,
+} from './context.ts';
+
+// Re-export functions
+export { getBuiltinFunctions } from './functions';
+
 // Import for evaluateTemplate implementation
 import { extractTemplateSegments } from './parser.ts';
 import { evaluate } from './evaluator.ts';
-import type { EvalContext } from './types.ts';
+import { ExpressionError, type EvalContext } from './types.ts';
 
 /**
  * Evaluate a template string with embedded expressions.
@@ -53,26 +64,37 @@ export function evaluateTemplate(template: string, context: EvalContext): string
   }
 
   // Build result by evaluating each segment
-  return segments
-    .map((segment) => {
-      if (segment.type === 'text') {
-        return segment.value;
-      }
+  const parts: string[] = [];
 
-      // Evaluate expression and convert to string
-      const result = evaluate(segment.value, context);
+  for (const segment of segments) {
+    if (segment.type === 'text') {
+      parts.push(segment.value);
+    } else {
+      try {
+        const result = evaluate(segment.value, context);
+        // Convert result to string
+        if (result === null || result === undefined) {
+          parts.push('');
+        } else if (typeof result === 'object') {
+          parts.push(JSON.stringify(result));
+        } else {
+          parts.push(String(result));
+        }
+      } catch (error) {
+        // Re-throw with template context
+        if (error instanceof ExpressionError) {
+          // Add template context to the error
+          throw new ExpressionError(error.message, {
+            expression: error.expression,
+            template,
+            position: { start: segment.start, end: segment.end },
+            cause: error.cause,
+          });
+        }
+        throw error;
+      }
+    }
+  }
 
-      // Convert result to string
-      if (result === null) {
-        return 'null';
-      }
-      if (result === undefined) {
-        return 'undefined';
-      }
-      if (typeof result === 'object') {
-        return JSON.stringify(result);
-      }
-      return String(result);
-    })
-    .join('');
+  return parts.join('');
 }

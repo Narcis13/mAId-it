@@ -12,7 +12,7 @@ FlowScript v1.0 builds a text-native workflow engine that executes .flow.md file
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation** - Parser, validator, and basic CLI for validation loop
+- [x] **Phase 1: Foundation** - Parser, validator, and basic CLI for validation loop
 - [ ] **Phase 2: Expression & Execution Core** - Expression evaluator and executor framework
 - [ ] **Phase 3: Source/Sink Runtimes** - HTTP and File runtimes proving the pattern
 - [ ] **Phase 4: AI Integration** - OpenRouter AI runtime with schema validation
@@ -39,8 +39,8 @@ Plans:
 - [x] 01-01-PLAN.md — Project setup, dependencies, and AST type definitions
 - [x] 01-02-PLAN.md — Parser implementation (YAML frontmatter, XML body, source locations)
 - [x] 01-03-PLAN.md — Validator and CLI validate command with error formatting
-- [ ] 01-04-PLAN.md — [GAP CLOSURE] Fix secret reference validation
-- [ ] 01-05-PLAN.md — [GAP CLOSURE] Add semver validation to version field
+- [x] 01-04-PLAN.md — [GAP CLOSURE] Fix secret reference validation
+- [x] 01-05-PLAN.md — [GAP CLOSURE] Add semver validation to version field
 
 ### Phase 2: Expression & Execution Core
 **Goal**: Users can see expressions evaluated and basic sequential execution work
@@ -172,7 +172,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 3/5 | Gap closure | - |
+| 1. Foundation | 5/5 | ✓ Complete | 2026-02-02 |
 | 2. Expression & Execution Core | 0/2 | Not started | - |
 | 3. Source/Sink Runtimes | 0/2 | Not started | - |
 | 4. AI Integration | 0/2 | Not started | - |

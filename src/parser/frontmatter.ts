@@ -169,6 +169,22 @@ export function parseFrontmatter(
     );
   }
 
+  // Validate semver format: X.Y.Z or X.Y
+  const semverPattern = /^\d+\.\d+(\.\d+)?$/;
+  if (typeof data.version === 'string' && !semverPattern.test(data.version)) {
+    errors.push(
+      createError(
+        'VALID_INVALID_FIELD_TYPE',
+        `Invalid version format "${data.version}"`,
+        createLocation(frontmatterStart, frontmatterStart, lineOffsets),
+        [
+          'Version must be in semver format: X.Y.Z or X.Y',
+          'Examples: "1.0.0", "2.1", "0.0.1"'
+        ]
+      )
+    );
+  }
+
   if (errors.length > 0) {
     return { success: false, errors };
   }

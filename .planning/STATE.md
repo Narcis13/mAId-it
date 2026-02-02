@@ -10,27 +10,27 @@ See: .planning/PROJECT.md (updated 2025-02-02)
 ## Current Position
 
 Phase: 1 of 8 (Foundation)
-Plan: 4 of 4 in current phase (gap closure)
+Plan: 5 of 5 in current phase (gap closure)
 Status: Phase complete (including gap closure)
-Last activity: 2026-02-02 - Completed 01-04-PLAN.md (Secret Reference Validation Fix)
+Last activity: 2026-02-02 - Completed 01-05-PLAN.md (Semver Version Validation)
 
-Progress: [████░░░░░░] 12%
+Progress: [█████░░░░░] 13%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
-- Average duration: 5 min
-- Total execution time: 0.35 hours
+- Total plans completed: 5
+- Average duration: 4 min
+- Total execution time: 0.37 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-foundation | 4 | 19 min | 5 min |
+| 01-foundation | 5 | 22 min | 4 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (4 min), 01-02 (8 min), 01-03 (5 min), 01-04 (2 min)
+- Last 5 plans: 01-01 (4 min), 01-02 (8 min), 01-03 (5 min), 01-04 (2 min), 01-05 (3 min)
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -55,6 +55,7 @@ Recent decisions affecting current work:
 - [01-03]: Levenshtein distance threshold: max(2, length/3) for suggestions
 - [01-04]: Secret pattern `{{$secrets.NAME}}` (dollar sign inside braces)
 - [01-04]: Scan raw source for secrets instead of node.config to catch XML child elements
+- [01-05]: Semver pattern /^\d+\.\d+(\.\d+)?$/ for X.Y.Z or X.Y formats (no v prefix, no prerelease)
 
 ### Pending Todos
 
@@ -67,7 +68,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-02
-Stopped at: Completed 01-04-PLAN.md (Phase 1 Gap Closure Complete)
+Stopped at: Completed 01-05-PLAN.md (Phase 1 Gap Closure Complete)
 Resume file: None
 
 ## Phase Commits

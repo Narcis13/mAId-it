@@ -35,7 +35,14 @@ export type ErrorCode =
   | 'VALID_UNDEFINED_SECRET_REF'
   | 'VALID_DUPLICATE_NODE_ID'
   // Graph validation
-  | 'VALID_CIRCULAR_DEPENDENCY';
+  | 'VALID_CIRCULAR_DEPENDENCY'
+  // Expression errors
+  | 'EXPR_PARSE_ERROR'
+  | 'EXPR_EVAL_ERROR'
+  | 'EXPR_UNDEFINED_VARIABLE'
+  | 'EXPR_UNDEFINED_FUNCTION'
+  | 'EXPR_BLOCKED_ACCESS'
+  | 'EXPR_TYPE_ERROR';
 
 /**
  * A single validation error or warning.

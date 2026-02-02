@@ -52,11 +52,12 @@ Plans:
   3. Built-in functions (string, array, math, time) work in expressions
   4. Expression errors show context (which expression, what failed)
   5. Context hierarchy (global to phase to node) is maintained during execution
-**Plans**: TBD
+**Plans**: 3 plans (2 waves)
 
 Plans:
-- [ ] 02-01: TBD
-- [ ] 02-02: TBD
+- [ ] 02-01-PLAN.md — Expression parser and sandboxed evaluator (jsep + AST walker)
+- [ ] 02-02-PLAN.md — Built-in functions library (string, array, math, time, object, type)
+- [ ] 02-03-PLAN.md — Context hierarchy and node output tracking integration
 
 ### Phase 3: Source/Sink Runtimes
 **Goal**: Users can execute workflows that fetch HTTP data and read/write files
@@ -173,7 +174,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 5/5 | ✓ Complete | 2026-02-02 |
-| 2. Expression & Execution Core | 0/2 | Not started | - |
+| 2. Expression & Execution Core | 0/3 | Planned | - |
 | 3. Source/Sink Runtimes | 0/2 | Not started | - |
 | 4. AI Integration | 0/2 | Not started | - |
 | 5. Transform & Control Flow | 0/3 | Not started | - |

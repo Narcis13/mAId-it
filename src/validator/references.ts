@@ -35,9 +35,9 @@ export function validateReferences(ast: WorkflowAST): ValidationError[] {
   // Validate node references
   errors.push(...validateNodeReferences(ast.nodes, nodeIds));
 
-  // Validate secret references
+  // Validate secret references - scan raw source for {{$secrets.NAME}} patterns
   const declaredSecrets = new Set(ast.metadata.secrets || []);
-  errors.push(...validateSecretReferences(ast.nodes, declaredSecrets));
+  errors.push(...validateSecretReferences(ast.sourceMap.source, declaredSecrets));
 
   return errors;
 }
@@ -274,106 +274,37 @@ function levenshteinDistance(a: string, b: string): number {
 
 /**
  * Validate secret references are declared in frontmatter.
- * Looks for patterns like {{secrets.NAME}} or ${{secrets.NAME}} in configs and templates.
+ * Scans raw source for patterns like {{$secrets.NAME}} to catch secrets
+ * anywhere in the workflow file (including XML child elements).
  */
 function validateSecretReferences(
-  nodes: NodeAST[],
+  source: string,
   declaredSecrets: Set<string>
 ): ValidationError[] {
   const errors: ValidationError[] = [];
+  const foundSecrets = new Set<string>();
 
-  for (const node of nodes) {
-    // Check config values for secret references
-    if ('config' in node) {
-      const config = (node as { config: Record<string, unknown> }).config;
-      for (const [key, value] of Object.entries(config)) {
-        if (typeof value === 'string') {
-          errors.push(...checkSecretRefs(value, node, declaredSecrets));
-        }
-      }
-    }
-
-    // Recursively check child nodes
-    errors.push(...validateChildSecretReferences(node, declaredSecrets));
-  }
-
-  return errors;
-}
-
-/**
- * Validate secret references in child nodes.
- */
-function validateChildSecretReferences(
-  node: NodeAST,
-  declaredSecrets: Set<string>
-): ValidationError[] {
-  switch (node.type) {
-    case 'branch': {
-      const branchNode = node as BranchNode;
-      const errors: ValidationError[] = [];
-      for (const branchCase of branchNode.cases) {
-        errors.push(...validateSecretReferences(branchCase.nodes, declaredSecrets));
-      }
-      if (branchNode.default) {
-        errors.push(...validateSecretReferences(branchNode.default, declaredSecrets));
-      }
-      return errors;
-    }
-    case 'if': {
-      const ifNode = node as IfNode;
-      const errors = validateSecretReferences(ifNode.then, declaredSecrets);
-      if (ifNode.else) {
-        errors.push(...validateSecretReferences(ifNode.else, declaredSecrets));
-      }
-      return errors;
-    }
-    case 'loop': {
-      const loopNode = node as LoopNode;
-      return validateSecretReferences(loopNode.body, declaredSecrets);
-    }
-    case 'while': {
-      const whileNode = node as WhileNode;
-      return validateSecretReferences(whileNode.body, declaredSecrets);
-    }
-    case 'foreach': {
-      const foreachNode = node as ForeachNode;
-      return validateSecretReferences(foreachNode.body, declaredSecrets);
-    }
-    case 'parallel': {
-      const parallelNode = node as ParallelNode;
-      const errors: ValidationError[] = [];
-      for (const branch of parallelNode.branches) {
-        errors.push(...validateSecretReferences(branch, declaredSecrets));
-      }
-      return errors;
-    }
-    default:
-      return [];
-  }
-}
-
-/**
- * Check a string value for secret references and validate they are declared.
- */
-function checkSecretRefs(
-  value: string,
-  node: NodeAST,
-  declaredSecrets: Set<string>
-): ValidationError[] {
-  const errors: ValidationError[] = [];
-
-  // Match patterns like {{secrets.NAME}} or ${{secrets.NAME}}
-  const secretPattern = /\$?\{\{secrets\.(\w+)\}\}/g;
+  // Match pattern {{$secrets.NAME}} - dollar sign inside braces
+  const secretPattern = /\{\{\$secrets\.(\w+)\}\}/g;
   let match;
 
-  while ((match = secretPattern.exec(value)) !== null) {
+  while ((match = secretPattern.exec(source)) !== null) {
     const secretName = match[1];
-    if (secretName && !declaredSecrets.has(secretName)) {
+    if (secretName && !declaredSecrets.has(secretName) && !foundSecrets.has(secretName)) {
+      foundSecrets.add(secretName);
+
+      // Find approximate line number for error location
+      const beforeMatch = source.substring(0, match.index);
+      const lineNumber = (beforeMatch.match(/\n/g) || []).length + 1;
+
       errors.push(
         createError(
           'VALID_UNDEFINED_SECRET_REF',
-          `Node "${node.id}" references undeclared secret "${secretName}"`,
-          node.loc,
+          `Undeclared secret "${secretName}" referenced in workflow`,
+          {
+            start: { line: lineNumber, column: 0, offset: match.index },
+            end: { line: lineNumber, column: match[0].length, offset: match.index + match[0].length }
+          },
           [
             `Declare the secret in frontmatter: secrets: [${secretName}]`,
             `Currently declared secrets: ${Array.from(declaredSecrets).join(', ') || 'none'}`
@@ -385,3 +316,4 @@ function checkSecretRefs(
 
   return errors;
 }
+

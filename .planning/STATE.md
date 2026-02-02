@@ -10,29 +10,29 @@ See: .planning/PROJECT.md (updated 2025-02-02)
 ## Current Position
 
 Phase: 2 of 8 (Expression & Execution Core)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-02-02 - Completed 02-01-PLAN.md (Expression Parser and Evaluator)
+Last activity: 2026-02-02 - Completed 02-02-PLAN.md (Built-in Functions Library)
 
-Progress: [██████░░░░] 16%
+Progress: [███████░░░] 18%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6
+- Total plans completed: 7
 - Average duration: 4 min
-- Total execution time: 0.43 hours
+- Total execution time: 0.48 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-foundation | 5 | 22 min | 4 min |
-| 02-expression-execution-core | 1 | 4 min | 4 min |
+| 02-expression-execution-core | 2 | 7 min | 3.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-02 (8 min), 01-03 (5 min), 01-04 (2 min), 01-05 (3 min), 02-01 (4 min)
-- Trend: Stable
+- Last 5 plans: 01-03 (5 min), 01-04 (2 min), 01-05 (3 min), 02-01 (4 min), 02-02 (3 min)
+- Trend: Stable/Improving
 
 *Updated after each plan completion*
 
@@ -62,6 +62,9 @@ Recent decisions affecting current work:
 - [02-01]: BLOCKED_PROPS Set for __proto__, constructor, prototype security
 - [02-01]: Only Identifier callee allowed for function calls (no obj.method())
 - [02-01]: Null-safe member access returns undefined instead of throwing
+- [02-02]: Luxon for date/time operations (ESM-native, robust timezone handling)
+- [02-02]: All 115 functions null-safe - return defaults instead of throwing
+- [02-02]: Central registry pattern: getBuiltinFunctions() returns flat Record<string, Function>
 
 ### Pending Todos
 
@@ -74,7 +77,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-02
-Stopped at: Completed 02-01-PLAN.md (Expression Parser and Evaluator)
+Stopped at: Completed 02-02-PLAN.md (Built-in Functions Library)
 Resume file: None
 
 ## Phase Commits

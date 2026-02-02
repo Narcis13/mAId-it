@@ -40,5 +40,11 @@ export {
 // Side-effect import: auto-registers HTTP runtimes
 import './http/index.ts';
 
+// Side-effect import: auto-registers File runtimes
+import './file/index.ts';
+
 // Re-export HTTP runtimes for convenience
 export { httpSourceRuntime, httpSinkRuntime } from './http/index.ts';
+
+// Re-export File runtimes for convenience
+export { fileSourceRuntime, fileSinkRuntime, resolveTemplatePath, validatePath, detectFormat } from './file/index.ts';

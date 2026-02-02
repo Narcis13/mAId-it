@@ -13,7 +13,7 @@ FlowScript v1.0 builds a text-native workflow engine that executes .flow.md file
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation** - Parser, validator, and basic CLI for validation loop
-- [ ] **Phase 2: Expression & Execution Core** - Expression evaluator and executor framework
+- [x] **Phase 2: Expression & Execution Core** - Expression evaluator and executor framework
 - [ ] **Phase 3: Source/Sink Runtimes** - HTTP and File runtimes proving the pattern
 - [ ] **Phase 4: AI Integration** - OpenRouter AI runtime with schema validation
 - [ ] **Phase 5: Transform & Control Flow** - Transform nodes and control flow constructs
@@ -55,9 +55,9 @@ Plans:
 **Plans**: 3 plans (2 waves)
 
 Plans:
-- [ ] 02-01-PLAN.md — Expression parser and sandboxed evaluator (jsep + AST walker)
-- [ ] 02-02-PLAN.md — Built-in functions library (string, array, math, time, object, type)
-- [ ] 02-03-PLAN.md — Context hierarchy and node output tracking integration
+- [x] 02-01-PLAN.md — Expression parser and sandboxed evaluator (jsep + AST walker)
+- [x] 02-02-PLAN.md — Built-in functions library (string, array, math, time, object, type)
+- [x] 02-03-PLAN.md — Context hierarchy and node output tracking integration
 
 ### Phase 3: Source/Sink Runtimes
 **Goal**: Users can execute workflows that fetch HTTP data and read/write files
@@ -174,7 +174,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 5/5 | ✓ Complete | 2026-02-02 |
-| 2. Expression & Execution Core | 0/3 | Planned | - |
+| 2. Expression & Execution Core | 3/3 | ✓ Complete | 2026-02-02 |
 | 3. Source/Sink Runtimes | 0/2 | Not started | - |
 | 4. AI Integration | 0/2 | Not started | - |
 | 5. Transform & Control Flow | 0/3 | Not started | - |

@@ -27,11 +27,11 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Expression Language
 
-- [ ] **EXPR-01**: Engine evaluates template expressions `{{node.output}}`
-- [ ] **EXPR-02**: Engine resolves variable references `$config.key`, `$secrets.NAME`, `$context.key`
-- [ ] **EXPR-03**: Engine provides built-in functions (string, array, math, time)
-- [ ] **EXPR-04**: Expression evaluation is sandboxed (no access to globals, no code injection)
-- [ ] **EXPR-05**: Engine handles expression errors gracefully with context
+- [x] **EXPR-01**: Engine evaluates template expressions `{{node.output}}`
+- [x] **EXPR-02**: Engine resolves variable references `$config.key`, `$secrets.NAME`, `$context.key`
+- [x] **EXPR-03**: Engine provides built-in functions (string, array, math, time)
+- [x] **EXPR-04**: Expression evaluation is sandboxed (no access to globals, no code injection)
+- [x] **EXPR-05**: Engine handles expression errors gracefully with context
 
 ### HTTP Runtime
 
@@ -95,8 +95,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [ ] **STATE-01**: Engine persists execution state to JSON file after each wave
 - [ ] **STATE-02**: Engine can resume failed workflow from last checkpoint
-- [ ] **STATE-03**: Engine tracks node outputs for expression resolution
-- [ ] **STATE-04**: Context hierarchy (global -> phase -> node) is maintained
+- [x] **STATE-03**: Engine tracks node outputs for expression resolution
+- [x] **STATE-04**: Context hierarchy (global -> phase -> node) is maintained
 
 ### CLI
 
@@ -183,11 +183,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | VALID-04 | Phase 1 | Complete |
 | VALID-05 | Phase 1 | Complete |
 | VALID-06 | Phase 1 | Complete |
-| EXPR-01 | Phase 2 | Pending |
-| EXPR-02 | Phase 2 | Pending |
-| EXPR-03 | Phase 2 | Pending |
-| EXPR-04 | Phase 2 | Pending |
-| EXPR-05 | Phase 2 | Pending |
+| EXPR-01 | Phase 2 | Complete |
+| EXPR-02 | Phase 2 | Complete |
+| EXPR-03 | Phase 2 | Complete |
+| EXPR-04 | Phase 2 | Complete |
+| EXPR-05 | Phase 2 | Complete |
 | HTTP-01 | Phase 3 | Pending |
 | HTTP-02 | Phase 3 | Pending |
 | HTTP-03 | Phase 3 | Pending |
@@ -227,8 +227,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ERR-05 | Phase 7 | Pending |
 | STATE-01 | Phase 7 | Pending |
 | STATE-02 | Phase 7 | Pending |
-| STATE-03 | Phase 2 | Pending |
-| STATE-04 | Phase 2 | Pending |
+| STATE-03 | Phase 2 | Complete |
+| STATE-04 | Phase 2 | Complete |
 | CLI-01 | Phase 1 | Complete |
 | CLI-02 | Phase 8 | Pending |
 | CLI-03 | Phase 8 | Pending |

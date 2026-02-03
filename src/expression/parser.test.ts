@@ -79,7 +79,7 @@ describe('parseExpression', () => {
   test('parses simple identifier', () => {
     const ast = parseExpression('name');
     expect(ast.type).toBe('Identifier');
-    expect((ast as { name: string }).name).toBe('name');
+    expect((ast as unknown as { name: string }).name).toBe('name');
   });
 
   test('parses member expression', () => {
@@ -90,13 +90,13 @@ describe('parseExpression', () => {
   test('parses binary expression', () => {
     const ast = parseExpression('a + b');
     expect(ast.type).toBe('BinaryExpression');
-    expect((ast as { operator: string }).operator).toBe('+');
+    expect((ast as unknown as { operator: string }).operator).toBe('+');
   });
 
   test('parses nullish coalescing', () => {
     const ast = parseExpression('x ?? "default"');
     expect(ast.type).toBe('BinaryExpression');
-    expect((ast as { operator: string }).operator).toBe('??');
+    expect((ast as unknown as { operator: string }).operator).toBe('??');
   });
 
   test('parses conditional expression', () => {
@@ -117,13 +117,13 @@ describe('parseExpression', () => {
   test('parses unary expression', () => {
     const ast = parseExpression('!flag');
     expect(ast.type).toBe('UnaryExpression');
-    expect((ast as { operator: string }).operator).toBe('!');
+    expect((ast as unknown as { operator: string }).operator).toBe('!');
   });
 
   test('parses computed member access', () => {
     const ast = parseExpression('obj["key"]');
     expect(ast.type).toBe('MemberExpression');
-    expect((ast as { computed: boolean }).computed).toBe(true);
+    expect((ast as unknown as { computed: boolean }).computed).toBe(true);
   });
 
   test('throws ExpressionError on invalid syntax', () => {

@@ -67,7 +67,7 @@ export function extractTemplateSegments(template: string): TemplateSegment[] {
     // Add expression segment
     segments.push({
       type: 'expression',
-      value: match[1].trim(),
+      value: match[1]!.trim(),
       start: match.index,
       end: match.index + match[0].length,
     });

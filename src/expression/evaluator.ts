@@ -37,13 +37,13 @@ const BLOCKED_PROPS = new Set(['__proto__', 'constructor', 'prototype']);
 export function evaluateNode(node: Expression, context: EvalContext): unknown {
   switch (node.type) {
     case 'Literal':
-      return (node as { value: unknown }).value;
+      return (node as unknown as { value: unknown }).value;
 
     case 'Identifier':
-      return context.variables[(node as { name: string }).name];
+      return context.variables[(node as unknown as { name: string }).name];
 
     case 'MemberExpression': {
-      const memberNode = node as {
+      const memberNode = node as unknown as {
         object: Expression;
         property: Expression;
         computed: boolean;
@@ -64,7 +64,7 @@ export function evaluateNode(node: Expression, context: EvalContext): unknown {
         prop = String(evaluateNode(memberNode.property, context));
       } else {
         // Non-computed: obj.prop - use property name directly
-        prop = (memberNode.property as { name: string }).name;
+        prop = (memberNode.property as unknown as { name: string }).name;
       }
 
       // SECURITY: Block prototype chain access
@@ -80,7 +80,7 @@ export function evaluateNode(node: Expression, context: EvalContext): unknown {
     }
 
     case 'CallExpression': {
-      const callNode = node as {
+      const callNode = node as unknown as {
         callee: Expression;
         arguments: Expression[];
       };
@@ -94,7 +94,7 @@ export function evaluateNode(node: Expression, context: EvalContext): unknown {
         );
       }
 
-      const fnName = (callNode.callee as { name: string }).name;
+      const fnName = (callNode.callee as unknown as { name: string }).name;
       const fn = context.functions[fnName];
 
       // Check if function is whitelisted
@@ -111,7 +111,7 @@ export function evaluateNode(node: Expression, context: EvalContext): unknown {
     }
 
     case 'BinaryExpression': {
-      const binNode = node as {
+      const binNode = node as unknown as {
         operator: string;
         left: Expression;
         right: Expression;
@@ -169,7 +169,7 @@ export function evaluateNode(node: Expression, context: EvalContext): unknown {
     }
 
     case 'UnaryExpression': {
-      const unaryNode = node as {
+      const unaryNode = node as unknown as {
         operator: string;
         argument: Expression;
         prefix: boolean;
@@ -193,7 +193,7 @@ export function evaluateNode(node: Expression, context: EvalContext): unknown {
     }
 
     case 'ConditionalExpression': {
-      const condNode = node as {
+      const condNode = node as unknown as {
         test: Expression;
         consequent: Expression;
         alternate: Expression;
@@ -206,7 +206,7 @@ export function evaluateNode(node: Expression, context: EvalContext): unknown {
     }
 
     case 'ArrayExpression': {
-      const arrayNode = node as { elements: (Expression | null)[] };
+      const arrayNode = node as unknown as { elements: (Expression | null)[] };
       return arrayNode.elements.map((el) =>
         el ? evaluateNode(el, context) : undefined
       );
@@ -214,7 +214,7 @@ export function evaluateNode(node: Expression, context: EvalContext): unknown {
 
     case 'Compound': {
       // Compound expressions (comma-separated) - evaluate all, return last
-      const compoundNode = node as { body: Expression[] };
+      const compoundNode = node as unknown as { body: Expression[] };
       let result: unknown;
       for (const expr of compoundNode.body) {
         result = evaluateNode(expr, context);

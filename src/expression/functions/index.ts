@@ -143,7 +143,7 @@ const utilityFunctions = {
  *
  * @returns Record containing all built-in functions by name
  */
-export function getBuiltinFunctions(): Record<string, Function> {
+export function getBuiltinFunctions(): Record<string, (...args: unknown[]) => unknown> {
   return {
     ...stringFunctions,
     ...arrayFunctions,
@@ -152,7 +152,7 @@ export function getBuiltinFunctions(): Record<string, Function> {
     ...objectFunctions,
     ...typeFunctions,
     ...utilityFunctions,
-  };
+  } as Record<string, (...args: unknown[]) => unknown>;
 }
 
 // Re-export individual function sets for testing and selective imports

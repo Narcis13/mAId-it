@@ -5,7 +5,7 @@
  * All functions handle invalid dates gracefully.
  */
 
-import { DateTime, Duration } from 'luxon';
+import { DateTime, Duration, type DurationUnit, type DateTimeUnit } from 'luxon';
 
 export const timeFunctions = {
   /**
@@ -84,8 +84,8 @@ export const timeFunctions = {
     const dt1 = DateTime.fromISO(date1);
     const dt2 = DateTime.fromISO(date2);
     if (!dt1.isValid || !dt2.isValid) return null;
-    const result = dt1.diff(dt2, unit as keyof Duration).toObject();
-    return result[unit as keyof typeof result] as number | undefined ?? null;
+    const result = dt1.diff(dt2, unit as DurationUnit).toObject();
+    return (result as Record<string, number | undefined>)[unit] ?? null;
   },
 
   /**
@@ -105,7 +105,7 @@ export const timeFunctions = {
     if (!isoDate) return null;
     const dt = DateTime.fromISO(isoDate);
     if (!dt.isValid) return null;
-    return dt.startOf(unit as keyof Duration).toISO();
+    return dt.startOf(unit as DateTimeUnit).toISO();
   },
 
   /**
@@ -115,7 +115,7 @@ export const timeFunctions = {
     if (!isoDate) return null;
     const dt = DateTime.fromISO(isoDate);
     if (!dt.isValid) return null;
-    return dt.endOf(unit as keyof Duration).toISO();
+    return dt.endOf(unit as DateTimeUnit).toISO();
   },
 
   /**

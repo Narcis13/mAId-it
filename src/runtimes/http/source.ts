@@ -168,7 +168,7 @@ class HttpSourceRuntime implements NodeRuntime<HttpSourceConfig, void, unknown> 
 
     // Apply JMESPath extraction if specified
     if (config.extract) {
-      return search(data, config.extract);
+      return search(data as Parameters<typeof search>[0], config.extract);
     }
 
     return data;

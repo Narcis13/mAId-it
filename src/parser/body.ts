@@ -354,6 +354,8 @@ function parseSourceNode(
 
   // Extract config from attributes (excluding id, type)
   const config = extractConfig(attrs, ['id', 'type', 'input']);
+  const childConfig = extractChildElements(entry, tagName);
+  Object.assign(config, childConfig);
 
   const node: SourceNode = {
     type: 'source',
@@ -393,19 +395,8 @@ function parseTransformNode(
   }
 
   const config = extractConfig(attrs, ['id', 'type', 'input']);
-
-  // Get template content from children if present
-  const children = entry[tagName];
-  if (Array.isArray(children)) {
-    for (const child of children) {
-      if (typeof child === 'object' && child !== null) {
-        const textChild = child as ParsedXMLNode;
-        if (textChild['#text']) {
-          config.template = String(textChild['#text']);
-        }
-      }
-    }
-  }
+  const childConfig = extractChildElements(entry, tagName);
+  Object.assign(config, childConfig);
 
   const node: TransformNode = {
     type: 'transform',
@@ -445,6 +436,8 @@ function parseSinkNode(
   }
 
   const config = extractConfig(attrs, ['id', 'type', 'input']);
+  const childConfig = extractChildElements(entry, tagName);
+  Object.assign(config, childConfig);
 
   const node: SinkNode = {
     type: 'sink',
@@ -860,4 +853,76 @@ function extractConfig(
   }
 
   return config;
+}
+
+/**
+ * Extract child elements from a parsed XML node and merge their content into a config object.
+ * Handles both YAML-like key-value pairs and raw text content.
+ */
+function extractChildElements(
+  entry: ParsedXMLNode,
+  tagName: string
+): Record<string, unknown> {
+  const children = entry[tagName];
+  if (!Array.isArray(children)) return {};
+
+  const result: Record<string, unknown> = {};
+
+  for (const child of children) {
+    if (typeof child !== 'object' || child === null) continue;
+    const childEntry = child as ParsedXMLNode;
+
+    // Find child tag name (skip attribute and text keys)
+    const childTag = Object.keys(childEntry).find(k => k !== ':@' && k !== '#text');
+    if (!childTag) continue;
+
+    // Extract text content from child
+    const childContent = childEntry[childTag];
+    if (!Array.isArray(childContent)) continue;
+
+    const textNode = childContent.find(
+      (n: unknown): n is ParsedXMLNode =>
+        typeof n === 'object' && n !== null && '#text' in (n as Record<string, unknown>)
+    );
+
+    if (!textNode || typeof textNode['#text'] !== 'string') continue;
+
+    const text = textNode['#text'].trim();
+
+    // If text has YAML-like key-value pairs, parse into object
+    if (looksLikeKeyValuePairs(text)) {
+      result[childTag] = parseKeyValuePairs(text);
+    } else {
+      result[childTag] = text;
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Check if text looks like YAML-style key-value pairs.
+ * Requires multiple lines where every non-empty line contains a colon.
+ */
+function looksLikeKeyValuePairs(text: string): boolean {
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  return lines.length > 1 && lines.every(l => l.includes(':'));
+}
+
+/**
+ * Parse YAML-like key-value text into an object.
+ */
+function parseKeyValuePairs(text: string): Record<string, string> {
+  const result: Record<string, string> = {};
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+
+  for (const line of lines) {
+    const colonIndex = line.indexOf(':');
+    if (colonIndex === -1) continue;
+    const key = line.slice(0, colonIndex).trim();
+    const value = line.slice(colonIndex + 1).trim();
+    if (key) result[key] = value;
+  }
+
+  return result;
 }

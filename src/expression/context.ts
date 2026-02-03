@@ -59,7 +59,7 @@ export function buildEvaluationContext(state: ExecutionState): EvalContext {
  */
 export function createEvalContext(
   variables: Record<string, unknown> = {},
-  functions?: Record<string, Function>
+  functions?: Record<string, (...args: unknown[]) => unknown>
 ): EvalContext {
   return {
     variables,

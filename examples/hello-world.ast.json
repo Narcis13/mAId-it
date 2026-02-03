@@ -1,0 +1,155 @@
+{
+  "metadata": {
+    "name": "hello-world",
+    "version": "1.0.0",
+    "description": "A simple example workflow that fetches a joke and saves it",
+    "trigger": {
+      "type": "manual"
+    },
+    "config": {
+      "output_dir": {
+        "type": "string",
+        "default": "./output",
+        "description": "Directory to save output files"
+      }
+    }
+  },
+  "nodes": [
+    {
+      "type": "source",
+      "id": "fetch-joke",
+      "loc": {
+        "start": {
+          "line": 33,
+          "column": 2,
+          "offset": 922
+        },
+        "end": {
+          "line": 33,
+          "column": 9,
+          "offset": 929
+        }
+      },
+      "sourceType": "http",
+      "config": {
+        "request": {
+          "method": "GET",
+          "url": "https://official-joke-api.appspot.com/random_joke"
+        }
+      }
+    },
+    {
+      "type": "transform",
+      "id": "format-joke",
+      "loc": {
+        "start": {
+          "line": 41,
+          "column": 2,
+          "offset": 1116
+        },
+        "end": {
+          "line": 41,
+          "column": 12,
+          "offset": 1126
+        }
+      },
+      "transformType": "map",
+      "config": {
+        "expression": "joke => ({\n        setup: joke.setup,\n        punchline: joke.punchline,\n        formatted: joke.setup + \" ... \" + joke.punchline,\n        fetched_at: now()\n      })"
+      },
+      "input": "fetch-joke"
+    },
+    {
+      "type": "sink",
+      "id": "save-joke",
+      "loc": {
+        "start": {
+          "line": 53,
+          "column": 2,
+          "offset": 1426
+        },
+        "end": {
+          "line": 53,
+          "column": 7,
+          "offset": 1431
+        }
+      },
+      "sinkType": "file",
+      "config": {
+        "path": "{{config.output_dir}}/joke.json",
+        "format": "json"
+      },
+      "input": "format-joke"
+    }
+  ],
+  "sourceMap": {
+    "source": "---\n# ═══════════════════════════════════════════════════════════════\n# IDENTITY\n# ═══════════════════════════════════════════════════════════════\nname: hello-world\nversion: 1.0.0\ndescription: A simple example workflow that fetches a joke and saves it\n\n# ═══════════════════════════════════════════════════════════════\n# TRIGGERS\n# ═══════════════════════════════════════════════════════════════\ntrigger:\n  manual: true\n\n# ═══════════════════════════════════════════════════════════════\n# CONFIGURATION\n# ═══════════════════════════════════════════════════════════════\nconfig:\n  output_dir:\n    type: string\n    default: \"./output\"\n    description: Directory to save output files\n\n# ═══════════════════════════════════════════════════════════════\n# RUNTIME SETTINGS\n# ═══════════════════════════════════════════════════════════════\nruntime:\n  timeout: 5m\n---\n\n<workflow>\n  <!-- Fetch a random joke from a public API -->\n  <source id=\"fetch-joke\" type=\"http\">\n    <request>\n      method: GET\n      url: https://official-joke-api.appspot.com/random_joke\n    </request>\n  </source>\n\n  <!-- Format the joke nicely -->\n  <transform id=\"format-joke\" type=\"map\" input=\"fetch-joke\">\n    <expression>\n      joke => ({\n        setup: joke.setup,\n        punchline: joke.punchline,\n        formatted: joke.setup + \" ... \" + joke.punchline,\n        fetched_at: now()\n      })\n    </expression>\n  </transform>\n\n  <!-- Save to a file -->\n  <sink id=\"save-joke\" type=\"file\" input=\"format-joke\">\n    <path>{{config.output_dir}}/joke.json</path>\n    <format>json</format>\n  </sink>\n</workflow>\n\n<!--\n## Execution Log\n\n_No executions yet._\n-->\n",
+    "filePath": "examples/hello-world.flow.md",
+    "lineOffsets": [
+      0,
+      4,
+      70,
+      81,
+      147,
+      165,
+      180,
+      252,
+      253,
+      319,
+      330,
+      396,
+      405,
+      420,
+      421,
+      487,
+      503,
+      569,
+      577,
+      591,
+      608,
+      632,
+      680,
+      681,
+      747,
+      766,
+      832,
+      841,
+      855,
+      859,
+      860,
+      871,
+      920,
+      959,
+      973,
+      991,
+      1052,
+      1067,
+      1079,
+      1080,
+      1114,
+      1175,
+      1192,
+      1209,
+      1236,
+      1271,
+      1329,
+      1355,
+      1364,
+      1382,
+      1397,
+      1398,
+      1424,
+      1480,
+      1529,
+      1555,
+      1565,
+      1577,
+      1578,
+      1583,
+      1600,
+      1601,
+      1622,
+      1626
+    ]
+  }
+}

@@ -88,14 +88,14 @@ export const objectFunctions = {
     const parts = path.split('.');
     let current = result;
     for (let i = 0; i < parts.length - 1; i++) {
-      const part = parts[i];
+      const part = parts[i]!;
       if (!(part in current) || typeof current[part] !== 'object') {
         current[part] = {};
       }
       current[part] = { ...(current[part] as object) };
       current = current[part] as Record<string, unknown>;
     }
-    current[parts[parts.length - 1]] = value;
+    current[parts[parts.length - 1]!] = value;
     return result;
   },
 

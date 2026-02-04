@@ -6,8 +6,8 @@
 <domain>
 ## Phase Boundary
 
-Call AI models via OpenRouter API with structured output validation. Users can define AI nodes that send prompts to models (Claude, GPT, etc.), validate responses against schemas, and handle retries automatically. Fallback models, cost guardrails, and multi-turn conversations are out of scope.
-
+Call AI models via @mariozechner/pi-ai(research this rep from pi-mono repository on github!)  with structured output validation. Users can define AI nodes that send prompts to models (Claude, GPT, etc.), validate responses against schemas, and handle retries automatically. Fallback models, cost guardrails, and multi-turn conversations are out of scope.
+Take a look here: https://github.com/badlogic/pi-mono/tree/main/packages/ai
 </domain>
 
 <decisions>
@@ -26,7 +26,7 @@ Call AI models via OpenRouter API with structured output validation. Users can d
 - Strict JSON rejection — if JSON parsing fails, treat as validation failure and retry
 
 ### Model configuration
-- Full OpenRouter model ID: `model="anthropic/claude-3.5-sonnet"` (explicit, no aliases)
+- Full @mariozechner/pi-ai OpenRouter model ID: `model="anthropic/claude-3.5-sonnet"` (explicit, no aliases)
 - Token budget via `max-tokens="4096"` attribute (output tokens)
 - Sensible defaults for temperature/params — no per-node knobs exposed
 - API key via secrets reference: `$secrets.OPENROUTER_API_KEY`

@@ -1,16 +1,19 @@
 # Phase 4: AI Integration - Research
 
 **Researched:** 2026-02-04
-**Domain:** AI model integration via OpenRouter API with structured output validation
+**Domain:** AI/LLM integration, structured output validation, schema DSL parsing
 **Confidence:** HIGH
 
 ## Summary
 
-This phase implements AI node functionality that calls OpenRouter's API to interact with various AI models (Claude, GPT, etc.) with structured output validation using zod schemas. The research covers three main areas: (1) OpenRouter API integration including request format, authentication, structured outputs, and rate limiting; (2) schema parsing and validation patterns for converting inline TypeScript-like DSL to zod schemas and then to JSON Schema for OpenRouter; and (3) retry strategies with exponential backoff and jitter for handling rate limits and validation failures.
+This phase integrates AI model calling via the `@mariozechner/pi-ai` library with structured output validation using Zod schemas. The pi-ai library provides a unified interface for multiple LLM providers including OpenRouter, with built-in support for tool calling, streaming responses, and token tracking.
 
-The established NodeRuntime pattern from Phase 3 provides a solid foundation. The AI runtime will follow the same interface with type-safe config, execute method, and optional validation. Zod v4.3.6 is already installed and provides native JSON Schema conversion via `z.toJSONSchema()`, which is ideal for OpenRouter's structured output feature.
+Key findings:
+- **pi-ai handles the heavy lifting**: The library abstracts provider differences, handles authentication via environment variables, and provides consistent APIs for streaming and completion
+- **Structured output via tool calling**: pi-ai uses TypeBox schemas with AJV validation for tool call arguments; we need to bridge from user's Zod-like DSL to a tool definition that forces JSON output
+- **Custom model creation**: For OpenRouter with arbitrary model IDs, we can create custom `Model` objects with the `openai-completions` API
 
-**Primary recommendation:** Implement AI runtime following existing NodeRuntime pattern, use zod for schema validation with native JSON Schema conversion for OpenRouter structured outputs, and implement full jitter exponential backoff for rate limit handling.
+**Primary recommendation:** Use pi-ai's `complete()` function with a tool definition that describes the expected output schema. Parse the user's TypeScript-like DSL into a Zod schema, convert to JSON Schema, then use that as the tool parameters. On validation failure, retry with error feedback in a new user message.
 
 ## Standard Stack
 
@@ -19,165 +22,165 @@ The established libraries/tools for this domain:
 ### Core
 | Library | Version | Purpose | Why Standard |
 |---------|---------|---------|--------------|
-| zod | ^4.3.6 | Schema validation | Already in project; native JSON Schema conversion via `z.toJSONSchema()` |
-| Bun fetch | native | HTTP requests | Project uses Bun runtime; built-in fetch API sufficient |
+| @mariozechner/pi-ai | ^0.51.6 | AI model calling | Unified API for multiple providers, built-in tool calling, token tracking |
+| zod | ^4.3.6 | Schema validation | Already in project, native JSON Schema export in v4, TypeScript inference |
 
 ### Supporting
 | Library | Version | Purpose | When to Use |
 |---------|---------|---------|-------------|
-| (none needed) | - | - | Built-in libraries sufficient |
+| @sinclair/typebox | (via pi-ai) | Schema definition | pi-ai uses internally for tool parameters |
+| ajv | (via pi-ai) | JSON Schema validation | pi-ai uses internally for tool validation |
 
 ### Alternatives Considered
 | Instead of | Could Use | Tradeoff |
 |------------|-----------|----------|
-| Native fetch | openai SDK | SDK adds weight; raw API more flexible and already have fetch pattern |
-| Native fetch | axios | Unnecessary; Bun fetch is sufficient and project avoids external HTTP clients |
-| zod | joi/yup | Zod already installed, has native JSON Schema, TypeScript-first |
+| pi-ai | Direct OpenAI/Anthropic SDKs | More control but must handle provider differences |
+| Zod | TypeBox | pi-ai uses TypeBox internally, but Zod already in project and has better DSL |
 
 **Installation:**
 ```bash
-# No new dependencies needed - zod 4.3.6 already installed
+bun install @mariozechner/pi-ai
 ```
 
 ## Architecture Patterns
 
 ### Recommended Project Structure
 ```
-src/runtimes/
-  ai/
-    index.ts           # Exports runtime and registration
-    runtime.ts         # AiRuntime class implementing NodeRuntime
-    schema-parser.ts   # Parse TypeScript-like DSL to zod schema
-    openrouter.ts      # OpenRouter API client
-    retry.ts           # Exponential backoff with jitter
-    types.ts           # AiConfig, AiOutput interfaces
-    errors.ts          # AiError, SchemaValidationError
+src/
+  runtimes/
+    ai/
+      index.ts           # Export AI runtime
+      runtime.ts         # AIRuntime class implementing NodeRuntime
+      schema-dsl.ts      # Parse "{name: string}" to Zod schema
+      retry.ts           # Retry logic with exponential backoff
+      errors.ts          # AIError, SchemaValidationError classes
+      types.ts           # AINodeConfig, AIResult interfaces
 ```
 
-### Pattern 1: AI Runtime as NodeRuntime
-**What:** AI runtime implements the established NodeRuntime interface with typed config/input/output.
-**When to use:** Always for AI transform nodes.
+### Pattern 1: Tool-Based Structured Output
+**What:** Use pi-ai's tool calling to force JSON output conforming to a schema
+**When to use:** Every AI node that declares an `output-schema` attribute
 **Example:**
 ```typescript
-// Source: Established pattern from src/runtimes/http/source.ts
-interface AiConfig {
-  model: string;                    // e.g., "anthropic/claude-3.5-sonnet"
-  systemPrompt?: string;            // Template string with {{expressions}}
-  userPrompt: string;               // Template string with {{expressions}}
-  outputSchema?: string;            // TypeScript-like DSL: "{name: string, tags: string[]}"
-  maxTokens?: number;               // Default: 4096
-  timeout?: number;                 // Default: 60000ms
-  maxRetries?: number;              // Default: 3
+// Source: pi-ai documentation and types.ts
+import { complete, getModel } from '@mariozechner/pi-ai';
+import type { Context, Tool, Model } from '@mariozechner/pi-ai';
+import { Type } from '@sinclair/typebox';
+import { z } from 'zod';
+
+// Convert Zod schema to TypeBox for pi-ai tool definition
+function zodToTypebox(zodSchema: z.ZodType): TSchema {
+  // Use z.toJSONSchema() from Zod v4, then adapt to TypeBox
+  const jsonSchema = z.toJSONSchema(zodSchema);
+  return Type.Unsafe(jsonSchema);
 }
 
-class AiRuntime implements NodeRuntime<AiConfig, unknown, unknown> {
-  readonly type = 'ai:transform';
+// Define tool that extracts structured data
+const outputTool: Tool = {
+  name: 'output',
+  description: 'Return the structured output matching the schema',
+  parameters: zodToTypebox(userSchema),
+};
 
-  async execute(params: ExecutionParams<AiConfig, unknown>): Promise<unknown> {
-    // 1. Resolve template expressions in prompts
-    // 2. Parse output schema to zod, then to JSON Schema
-    // 3. Call OpenRouter API with retry logic
-    // 4. Validate response against schema
-    // 5. Return validated output
-  }
+const context: Context = {
+  systemPrompt: systemPrompt,
+  messages: [{ role: 'user', content: userPrompt, timestamp: Date.now() }],
+  tools: [outputTool],
+};
+
+const response = await complete(model, context, {
+  maxTokens: 4096,
+  apiKey: apiKey,
+});
+
+// Extract tool call arguments as the structured output
+const toolCall = response.content.find(b => b.type === 'toolCall');
+if (toolCall?.type === 'toolCall') {
+  const output = toolCall.arguments; // Already validated by pi-ai/AJV
 }
 ```
 
-### Pattern 2: Schema DSL Parser
-**What:** Parse inline TypeScript-like schema DSL to zod schema at runtime.
-**When to use:** When processing `output-schema="{name: string, tags: string[]}"` attributes.
+### Pattern 2: Custom OpenRouter Model
+**What:** Create a Model object for arbitrary OpenRouter model IDs
+**When to use:** When user specifies a model not in pi-ai's registry
 **Example:**
 ```typescript
-// Custom parser for TypeScript-like object literal syntax
-// Supports: string, number, boolean, string[], number[], nested objects
+// Source: pi-ai types.ts Model interface
+import type { Model } from '@mariozechner/pi-ai';
 
-function parseSchemaString(dsl: string): z.ZodSchema {
-  // "{name: string, tags: string[], meta: {count: number}}"
-  // ->
-  // z.object({
-  //   name: z.string(),
-  //   tags: z.array(z.string()),
-  //   meta: z.object({ count: z.number() })
-  // })
-}
-
-// Convert zod schema to JSON Schema for OpenRouter
-function toOpenRouterSchema(zodSchema: z.ZodSchema, name: string): object {
+function createOpenRouterModel(modelId: string): Model<'openai-completions'> {
   return {
-    type: "json_schema",
-    json_schema: {
-      name,
-      strict: true,
-      schema: z.toJSONSchema(zodSchema)
-    }
+    id: modelId,                    // e.g., "anthropic/claude-3.5-sonnet"
+    name: modelId,
+    api: 'openai-completions',      // OpenRouter uses OpenAI-compatible API
+    provider: 'openrouter',
+    baseUrl: 'https://openrouter.ai/api/v1',
+    reasoning: false,
+    input: ['text'],                // Assume text only
+    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },  // Unknown cost
+    contextWindow: 128000,          // Conservative default
+    maxTokens: 4096,
   };
 }
 ```
 
-### Pattern 3: OpenRouter API Client
-**What:** Thin wrapper for OpenRouter chat completions API.
-**When to use:** All AI model calls.
+### Pattern 3: Retry with Validation Error Feedback
+**What:** Include validation errors in retry prompt so model can self-correct
+**When to use:** When structured output validation fails
 **Example:**
 ```typescript
-// Source: https://openrouter.ai/docs/api/reference/overview
-interface OpenRouterRequest {
-  model: string;                          // "anthropic/claude-3.5-sonnet"
-  messages: Array<{
-    role: 'system' | 'user' | 'assistant';
-    content: string;
-  }>;
-  max_tokens?: number;
-  response_format?: {
-    type: 'json_schema';
-    json_schema: {
-      name: string;
-      strict: boolean;
-      schema: object;
-    };
-  };
-}
+// Retry prompt format for validation failures
+function buildRetryPrompt(
+  originalPrompt: string,
+  failedOutput: unknown,
+  validationError: string
+): string {
+  return `${originalPrompt}
 
-async function callOpenRouter(
-  request: OpenRouterRequest,
-  apiKey: string,
-  timeout: number
-): Promise<string> {
-  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(request),
-    signal: AbortSignal.timeout(timeout),
-  });
-  // Handle response...
+Your previous response did not match the required schema.
+
+Previous output:
+\`\`\`json
+${JSON.stringify(failedOutput, null, 2)}
+\`\`\`
+
+Validation error:
+${validationError}
+
+Please try again, ensuring your response strictly matches the required schema.`;
 }
 ```
 
-### Pattern 4: Full Jitter Exponential Backoff
-**What:** Retry failed requests with randomized exponential delays.
-**When to use:** Rate limit (429) responses and schema validation retries.
+### Pattern 4: Exponential Backoff with Jitter
+**What:** Retry rate-limited requests with increasing delays and random jitter
+**When to use:** When receiving 429 (rate limit) or 5xx errors
 **Example:**
 ```typescript
-// Source: AWS Architecture Blog patterns
-function calculateDelay(attempt: number, baseDelay: number, maxDelay: number): number {
-  const exponentialDelay = baseDelay * Math.pow(2, attempt);
-  const cappedDelay = Math.min(exponentialDelay, maxDelay);
-  // Full jitter: random value between 0 and capped delay
-  return Math.random() * cappedDelay;
+// Source: AWS best practices for exponential backoff
+function calculateBackoffMs(attempt: number, baseMs: number = 1000): number {
+  // Exponential: 1s, 2s, 4s, 8s, 16s, ...
+  const exponentialDelay = baseMs * Math.pow(2, attempt);
+
+  // Cap at 32 seconds
+  const cappedDelay = Math.min(exponentialDelay, 32000);
+
+  // Add jitter: random value between 0 and delay
+  // "Full jitter" strategy per AWS recommendations
+  const jitter = Math.random() * cappedDelay;
+
+  return Math.floor(jitter);
 }
 
-// Base: 1000ms, Max: 32000ms for rate limits
-// Delays: ~0-1s, ~0-2s, ~0-4s, ~0-8s, ~0-16s, ~0-32s
+async function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 ```
 
 ### Anti-Patterns to Avoid
-- **Hand-rolling JSON Schema:** Use `z.toJSONSchema()` instead of manual JSON Schema construction
-- **Fixed retry delays:** Always use jitter to prevent thundering herd
-- **Ignoring Retry-After:** Check response headers for rate limit guidance
-- **Retrying non-idempotent failures:** Only retry on rate limits (429) and validation errors, not business logic failures
-- **Parsing JSON without try/catch:** Always wrap JSON.parse in try/catch and treat failures as validation errors
+- **Don't parse AI text output as JSON directly**: Use tool calling to ensure structured output; text parsing is fragile
+- **Don't retry indefinitely**: Set a maximum retry count (3 for validation, respect rate limit headers)
+- **Don't expose API keys in error messages**: Sanitize errors before surfacing to users
+- **Don't build raw HTTP requests to OpenRouter**: Use pi-ai which handles auth headers, retries, and API quirks
 
 ## Don't Hand-Roll
 
@@ -185,221 +188,243 @@ Problems that look simple but have existing solutions:
 
 | Problem | Don't Build | Use Instead | Why |
 |---------|-------------|-------------|-----|
-| JSON Schema generation | Manual schema objects | `z.toJSONSchema()` | Zod v4 has native, tested conversion |
-| Schema validation | Custom validation logic | `zodSchema.safeParse()` | Comprehensive error messages with paths |
-| Error formatting | String concatenation | `z.prettifyError()` | Clean multi-line format |
-| Exponential backoff timing | Simple 2^n | Full jitter algorithm | Prevents thundering herd, reduces server load |
+| LLM API calls | Raw fetch to OpenRouter | pi-ai library | Handles streaming, auth, provider quirks, token counting |
+| Schema validation | Manual JSON parsing | Zod + z.safeParse() | Type inference, detailed error messages, composable |
+| JSON Schema generation | Manual schema building | z.toJSONSchema() | Native in Zod v4, handles edge cases |
+| Retry logic | Simple while loop | Proper backoff with jitter | Thundering herd problem, rate limit compliance |
+| Tool definitions | Custom format | pi-ai Tool interface | Consistent with library expectations |
 
-**Key insight:** Zod v4 provides end-to-end schema workflow: define schema -> validate data -> convert to JSON Schema -> format errors. Don't rebuild these wheels.
+**Key insight:** pi-ai already solves the hard problems of LLM integration (provider differences, streaming, tool calling). Focus implementation effort on the schema DSL parser and runtime orchestration, not on API plumbing.
 
 ## Common Pitfalls
 
-### Pitfall 1: Schema Validation Message Not Model-Friendly
-**What goes wrong:** Validation errors are formatted for developers, not for AI self-correction.
-**Why it happens:** Using raw ZodError messages that include technical paths like `issues[0].path`.
-**How to avoid:** Format errors to clearly explain what the model got wrong and what's expected.
-**Warning signs:** AI retries fail repeatedly with the same error.
+### Pitfall 1: JSON in Text vs Tool Calling
+**What goes wrong:** Asking the model to "return JSON" in text output leads to inconsistent formatting
+**Why it happens:** Models may add markdown code blocks, explanations, or malformed JSON
+**How to avoid:** Always use tool calling for structured output; pi-ai validates tool call arguments automatically
+**Warning signs:** Getting responses like "Sure! Here's the JSON:" or ```json blocks in text
 
-```typescript
-// Bad: Raw zod error
-"Expected string, received number at path: data.name"
+### Pitfall 2: Schema Mismatch Between Validation Layers
+**What goes wrong:** User schema (Zod) doesn't match what pi-ai validates (TypeBox/JSON Schema)
+**Why it happens:** Different schema libraries have subtle differences in how they express types
+**How to avoid:** Use z.toJSONSchema() and validate the final output with Zod again after extraction
+**Warning signs:** pi-ai accepts output but Zod rejects it (or vice versa)
 
-// Good: Model-friendly format
-"Validation failed. You returned { name: 123 } but name must be a string.
-Expected schema: { name: string, tags: string[] }
-Please try again with the correct types."
-```
+### Pitfall 3: Rate Limit Retry Storms
+**What goes wrong:** Multiple concurrent workflows all retry at the same time after rate limit
+**Why it happens:** Exponential backoff without jitter means synchronized retry times
+**How to avoid:** Always add jitter (random delay component) to backoff calculations
+**Warning signs:** Seeing 429 errors in bursts after the first 429
 
-### Pitfall 2: Not Handling Non-JSON Responses
-**What goes wrong:** AI returns markdown or explanatory text instead of pure JSON.
-**Why it happens:** Prompt doesn't explicitly request JSON-only response.
-**How to avoid:** Include explicit JSON instruction in system prompt; strip markdown code fences if present.
-**Warning signs:** JSON.parse failures on responses that contain valid JSON wrapped in text.
+### Pitfall 4: Infinite Retry Loops
+**What goes wrong:** AI keeps producing invalid output, retries never succeed
+**Why it happens:** Some prompts + schemas are fundamentally incompatible, or model can't follow instructions
+**How to avoid:** Set hard limit (3 retries default), fail with descriptive error after limit
+**Warning signs:** Same validation error repeatedly, token usage exploding
 
-```typescript
-// Handle markdown code fences in response
-function extractJson(response: string): string {
-  const jsonMatch = response.match(/```(?:json)?\s*([\s\S]*?)```/);
-  return jsonMatch ? jsonMatch[1].trim() : response.trim();
-}
-```
+### Pitfall 5: Timeout Without Cleanup
+**What goes wrong:** AI request times out but connection stays open, consuming resources
+**Why it happens:** Not passing AbortSignal or not handling abort properly
+**How to avoid:** Always use AbortSignal.timeout() and pass signal to pi-ai options
+**Warning signs:** Memory growth, hanging requests, slow subsequent requests
 
-### Pitfall 3: Rate Limit Response Headers Ignored
-**What goes wrong:** Fixed exponential backoff doesn't respect server guidance.
-**Why it happens:** OpenRouter may return Retry-After header with specific wait time.
-**How to avoid:** Check Retry-After header first; use calculated backoff as fallback.
-**Warning signs:** Getting 429 errors immediately after retry.
-
-```typescript
-// Check Retry-After header first
-const retryAfter = response.headers.get('Retry-After');
-const delay = retryAfter
-  ? parseInt(retryAfter, 10) * 1000
-  : calculateJitteredDelay(attempt);
-```
-
-### Pitfall 4: Schema Parser Too Limited or Too Complex
-**What goes wrong:** Parser either fails on valid TypeScript-like syntax or becomes a full TypeScript parser.
-**Why it happens:** Scope creep or under-scoping the DSL.
-**How to avoid:** Define clear subset: primitives (string, number, boolean), arrays (T[]), and nested objects. No unions, optionals, or generics initially.
-**Warning signs:** Users confused about what syntax is supported.
-
-### Pitfall 5: Missing Timeout on AI Calls
-**What goes wrong:** AI calls hang indefinitely on slow responses.
-**Why it happens:** Forgetting AbortSignal.timeout or not handling timeout errors.
-**How to avoid:** Always use timeout (default 60s per CONTEXT.md); wrap in TimeoutError.
-**Warning signs:** Tests hang; workflows never complete.
+### Pitfall 6: Empty or Null Tool Arguments
+**What goes wrong:** Model returns empty object {} or null for tool arguments
+**Why it happens:** Some models may not fully support tool calling, or schema is too complex
+**How to avoid:** Validate that required fields exist in tool call arguments, treat empty as validation failure
+**Warning signs:** Tool call present but arguments is {} or has missing fields
 
 ## Code Examples
 
 Verified patterns from official sources:
 
-### OpenRouter Chat Completion Request
+### Complete AI Node Execution Flow
 ```typescript
-// Source: https://openrouter.ai/docs/api/reference/overview
-const request = {
-  model: "anthropic/claude-3.5-sonnet",
-  messages: [
-    { role: "system", content: "You are a helpful assistant. Return JSON only." },
-    { role: "user", content: "Extract the name and age from: John is 30 years old" }
-  ],
-  max_tokens: 4096,
-  response_format: {
-    type: "json_schema",
-    json_schema: {
-      name: "extraction",
-      strict: true,
-      schema: {
-        type: "object",
-        properties: {
-          name: { type: "string" },
-          age: { type: "number" }
-        },
-        required: ["name", "age"],
-        additionalProperties: false
-      }
-    }
-  }
-};
+// Source: Synthesized from pi-ai docs, types.ts, validation.ts
+import { complete } from '@mariozechner/pi-ai';
+import type { Context, Tool, Model, AssistantMessage } from '@mariozechner/pi-ai';
+import { z } from 'zod';
+import { Type } from '@sinclair/typebox';
 
-const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-  method: "POST",
-  headers: {
-    "Authorization": `Bearer ${apiKey}`,
-    "Content-Type": "application/json"
-  },
-  body: JSON.stringify(request),
-  signal: AbortSignal.timeout(60000)
-});
-
-const data = await response.json();
-const content = data.choices[0].message.content;
-```
-
-### Zod Schema to JSON Schema
-```typescript
-// Source: https://zod.dev/json-schema
-import { z } from "zod";
-
-const schema = z.object({
-  name: z.string(),
-  age: z.number(),
-  tags: z.array(z.string())
-});
-
-const jsonSchema = z.toJSONSchema(schema);
-// Output:
-// {
-//   type: "object",
-//   properties: {
-//     name: { type: "string" },
-//     age: { type: "number" },
-//     tags: { type: "array", items: { type: "string" } }
-//   },
-//   required: ["name", "age", "tags"],
-//   additionalProperties: false
-// }
-```
-
-### Schema Validation with Error Formatting
-```typescript
-// Source: https://zod.dev/api
-import { z } from "zod";
-
-const schema = z.object({
-  name: z.string(),
-  age: z.number()
-});
-
-const result = schema.safeParse({ name: 123, age: "thirty" });
-
-if (!result.success) {
-  // z.prettifyError for human-readable format
-  const formatted = z.prettifyError(result.error);
-  // Or access issues directly for model feedback
-  const issues = result.error.issues.map(issue => ({
-    path: issue.path.join('.'),
-    expected: issue.expected,
-    received: issue.received,
-    message: issue.message
-  }));
-}
-```
-
-### Full Jitter Backoff Implementation
-```typescript
-// Source: AWS Architecture Blog best practices
-interface RetryConfig {
-  maxAttempts: number;
-  baseDelay: number;    // milliseconds
-  maxDelay: number;     // milliseconds
+interface AINodeConfig {
+  model: string;              // e.g., "anthropic/claude-3.5-sonnet"
+  systemPrompt: string;
+  userPrompt: string;
+  outputSchema: z.ZodType;
+  maxTokens?: number;
+  maxRetries?: number;
+  timeout?: number;
 }
 
-async function withRetry<T>(
-  fn: () => Promise<T>,
-  config: RetryConfig,
-  isRetryable: (error: unknown) => boolean
-): Promise<T> {
-  let lastError: unknown;
+interface AIResult<T> {
+  output: T;
+  usage: {
+    inputTokens: number;
+    outputTokens: number;
+    totalCost: number;
+  };
+  retries: number;
+}
 
-  for (let attempt = 0; attempt < config.maxAttempts; attempt++) {
+async function executeAINode<T>(
+  config: AINodeConfig,
+  apiKey: string
+): Promise<AIResult<T>> {
+  const {
+    model: modelId,
+    systemPrompt,
+    userPrompt,
+    outputSchema,
+    maxTokens = 4096,
+    maxRetries = 3,
+    timeout = 60000,
+  } = config;
+
+  // Create model (custom if not in registry)
+  const model = createOpenRouterModel(modelId);
+
+  // Convert Zod schema to JSON Schema for tool definition
+  const jsonSchema = z.toJSONSchema(outputSchema);
+
+  // Create tool that forces structured output
+  const outputTool: Tool = {
+    name: 'respond',
+    description: 'Provide the structured response matching the required schema',
+    parameters: Type.Unsafe(jsonSchema),
+  };
+
+  let currentPrompt = userPrompt;
+  let lastError: Error | null = null;
+  let totalRetries = 0;
+  let totalUsage = { input: 0, output: 0, cost: 0 };
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      return await fn();
-    } catch (error) {
-      lastError = error;
+      const context: Context = {
+        systemPrompt,
+        messages: [{ role: 'user', content: currentPrompt, timestamp: Date.now() }],
+        tools: [outputTool],
+      };
 
-      if (!isRetryable(error) || attempt === config.maxAttempts - 1) {
-        throw error;
+      const response = await complete(model, context, {
+        maxTokens,
+        apiKey,
+        signal: AbortSignal.timeout(timeout),
+      });
+
+      // Accumulate usage
+      totalUsage.input += response.usage.input;
+      totalUsage.output += response.usage.output;
+      totalUsage.cost += response.usage.cost.total;
+
+      // Check for errors
+      if (response.stopReason === 'error') {
+        throw new Error(response.errorMessage || 'AI request failed');
       }
 
-      // Full jitter: random(0, min(cap, base * 2^attempt))
-      const exponentialDelay = config.baseDelay * Math.pow(2, attempt);
-      const cappedDelay = Math.min(exponentialDelay, config.maxDelay);
-      const jitteredDelay = Math.random() * cappedDelay;
+      // Extract tool call
+      const toolCall = response.content.find(b => b.type === 'toolCall');
+      if (!toolCall || toolCall.type !== 'toolCall') {
+        throw new SchemaValidationError(
+          'Model did not call the output tool',
+          null,
+          'Missing tool call in response'
+        );
+      }
 
-      await new Promise(resolve => setTimeout(resolve, jitteredDelay));
+      // Validate with Zod (double-check after pi-ai's validation)
+      const parsed = outputSchema.safeParse(toolCall.arguments);
+      if (!parsed.success) {
+        throw new SchemaValidationError(
+          'Output does not match schema',
+          toolCall.arguments,
+          parsed.error.format()
+        );
+      }
+
+      return {
+        output: parsed.data as T,
+        usage: {
+          inputTokens: totalUsage.input,
+          outputTokens: totalUsage.output,
+          totalCost: totalUsage.cost,
+        },
+        retries: totalRetries,
+      };
+
+    } catch (error) {
+      lastError = error as Error;
+
+      // Check if retryable
+      if (error instanceof SchemaValidationError && attempt < maxRetries) {
+        totalRetries++;
+        currentPrompt = buildRetryPrompt(
+          userPrompt,
+          error.failedOutput,
+          error.validationMessage
+        );
+        continue;
+      }
+
+      // Check for rate limiting (via pi-ai error)
+      if (isRateLimitError(error) && attempt < maxRetries) {
+        totalRetries++;
+        const backoffMs = calculateBackoffMs(attempt);
+        await sleep(backoffMs);
+        continue;
+      }
+
+      throw error;
     }
   }
 
-  throw lastError;
+  throw lastError || new Error('AI execution failed after retries');
 }
 
-// Usage for rate limits: base 1s, max 32s, 5 attempts
-const result = await withRetry(
-  () => callOpenRouter(request),
-  { maxAttempts: 5, baseDelay: 1000, maxDelay: 32000 },
-  (error) => error instanceof HttpError && error.status === 429
-);
+// Error classes
+class SchemaValidationError extends Error {
+  constructor(
+    message: string,
+    public readonly failedOutput: unknown,
+    public readonly validationMessage: string
+  ) {
+    super(message);
+    this.name = 'SchemaValidationError';
+    Object.setPrototypeOf(this, SchemaValidationError.prototype);
+  }
+}
+
+class AIError extends Error {
+  constructor(
+    message: string,
+    public readonly code: 'TIMEOUT' | 'RATE_LIMIT' | 'VALIDATION' | 'API_ERROR',
+    public readonly retryable: boolean
+  ) {
+    super(message);
+    this.name = 'AIError';
+    Object.setPrototypeOf(this, AIError.prototype);
+  }
+}
 ```
 
-### Schema DSL Parser (Recommended Approach)
+### Schema DSL Parser
 ```typescript
-// Simple recursive descent parser for TypeScript-like object literals
-// Supports: string, number, boolean, T[], nested objects
+// Source: Custom implementation based on Zod API
+import { z } from 'zod';
 
-type PrimitiveType = 'string' | 'number' | 'boolean';
-
-function parseSchemaString(dsl: string): z.ZodSchema {
+/**
+ * Parse TypeScript-like schema DSL to Zod schema.
+ *
+ * Supported syntax:
+ *   - Primitives: string, number, boolean
+ *   - Arrays: string[], number[], Type[]
+ *   - Objects: {name: string, age: number}
+ *   - Nested: {user: {name: string}, tags: string[]}
+ *   - Optional: name?: string (NOT YET - mark as v2)
+ *
+ * Example: "{name: string, tags: string[], metadata: {count: number}}"
+ */
+function parseSchemaDSL(dsl: string): z.ZodType {
   const trimmed = dsl.trim();
 
   // Primitive types
@@ -407,30 +432,89 @@ function parseSchemaString(dsl: string): z.ZodSchema {
   if (trimmed === 'number') return z.number();
   if (trimmed === 'boolean') return z.boolean();
 
-  // Arrays: T[]
+  // Array types: Type[]
   if (trimmed.endsWith('[]')) {
     const elementType = trimmed.slice(0, -2);
-    return z.array(parseSchemaString(elementType));
+    return z.array(parseSchemaDSL(elementType));
   }
 
-  // Objects: { key: type, ... }
+  // Object types: {key: Type, ...}
   if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
     const inner = trimmed.slice(1, -1).trim();
-    const properties = parseObjectProperties(inner);
-    const shape: Record<string, z.ZodSchema> = {};
-    for (const [key, value] of properties) {
-      shape[key] = parseSchemaString(value);
+    const shape: Record<string, z.ZodType> = {};
+
+    // Parse comma-separated key: Type pairs
+    // Handle nested objects by tracking brace depth
+    const pairs = splitByCommaRespectingBraces(inner);
+
+    for (const pair of pairs) {
+      const colonIndex = pair.indexOf(':');
+      if (colonIndex === -1) {
+        throw new Error(`Invalid schema syntax: missing colon in "${pair}"`);
+      }
+
+      const key = pair.slice(0, colonIndex).trim();
+      const valueType = pair.slice(colonIndex + 1).trim();
+      shape[key] = parseSchemaDSL(valueType);
     }
+
     return z.object(shape);
   }
 
-  throw new Error(`Unsupported schema type: ${trimmed}`);
+  throw new Error(`Unknown schema type: "${trimmed}"`);
 }
 
-function parseObjectProperties(inner: string): [string, string][] {
-  // Parse "key: type, key2: type2" handling nested braces
-  // Implementation handles brace depth counting for nested objects
-  // ...
+function splitByCommaRespectingBraces(str: string): string[] {
+  const pairs: string[] = [];
+  let current = '';
+  let depth = 0;
+
+  for (const char of str) {
+    if (char === '{') depth++;
+    if (char === '}') depth--;
+    if (char === ',' && depth === 0) {
+      pairs.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+
+  if (current.trim()) {
+    pairs.push(current.trim());
+  }
+
+  return pairs;
+}
+```
+
+### Retry Prompt Format
+```typescript
+// Recommended format for validation error feedback
+function buildRetryPrompt(
+  originalPrompt: string,
+  failedOutput: unknown,
+  validationError: string | object
+): string {
+  const errorStr = typeof validationError === 'string'
+    ? validationError
+    : JSON.stringify(validationError, null, 2);
+
+  return `${originalPrompt}
+
+---
+
+Your previous response did not match the required output schema.
+
+Your output:
+\`\`\`json
+${JSON.stringify(failedOutput, null, 2)}
+\`\`\`
+
+Schema validation error:
+${errorStr}
+
+Please provide a corrected response that strictly matches the required schema. Return ONLY the structured data via the respond tool.`;
 }
 ```
 
@@ -438,60 +522,64 @@ function parseObjectProperties(inner: string): [string, string][] {
 
 | Old Approach | Current Approach | When Changed | Impact |
 |--------------|------------------|--------------|--------|
-| zod-to-json-schema package | `z.toJSONSchema()` native | Zod v4 (2024-2025) | No external dependency needed |
-| Manual JSON Schema | OpenRouter structured outputs | 2025 | Server-side validation, better reliability |
-| Fixed exponential delays | Full jitter | AWS recommended (2015+) | Prevents thundering herd |
-| Simple retry loops | Retry-After header awareness | Standard practice | Respects server guidance |
+| Manual JSON parsing from text | Tool calling with schema validation | 2024 | Reliable structured output |
+| zod-to-json-schema package | z.toJSONSchema() native | Zod v4 (Nov 2025) | One less dependency |
+| Provider-specific SDKs | Unified libraries (pi-ai, Vercel AI SDK) | 2024-2025 | Simplified multi-provider support |
+| Retry without jitter | Exponential backoff + full jitter | Always was best practice | Prevents thundering herd |
 
 **Deprecated/outdated:**
-- `zod-to-json-schema` npm package: Deprecated November 2025, use native `z.toJSONSchema()`
-- JSON mode without schema: Use `json_schema` type instead of `json_object` for strict validation
+- `zod-to-json-schema` package: Use native `z.toJSONSchema()` in Zod v4 instead
+- Direct OpenRouter HTTP calls: Use pi-ai's abstraction layer
+- Text-based JSON extraction: Use tool calling exclusively
 
 ## Open Questions
 
 Things that couldn't be fully resolved:
 
-1. **TypeScript DSL Parser Edge Cases**
-   - What we know: Basic types and arrays are straightforward
-   - What's unclear: How to handle optional properties (`name?: string`) - should we support them?
-   - Recommendation: Start without optionals; all fields required by default. Add later if needed.
+1. **TypeBox to Zod Schema Compatibility**
+   - What we know: pi-ai uses TypeBox internally, Zod schemas convert to JSON Schema
+   - What's unclear: Are there edge cases where JSON Schema from Zod doesn't work with pi-ai's TypeBox validation?
+   - Recommendation: Double-validate with Zod after extraction; test with complex nested schemas
 
-2. **Retry Strategy for Validation Failures vs Rate Limits**
-   - What we know: Both need retry, but reasons differ
-   - What's unclear: Should validation retries use same backoff as rate limits?
-   - Recommendation: Use shorter delays for validation retries (immediate first retry, then 1s, 2s) since these aren't server-side rate limits. Use full jitter backoff for 429s.
+2. **OpenRouter Model Discovery**
+   - What we know: We can create custom Model objects for any model ID
+   - What's unclear: Should we pre-populate known models vs. always use dynamic creation?
+   - Recommendation: Use dynamic creation since OpenRouter adds models frequently; model ID validation is done by OpenRouter itself
 
-3. **Model Support for Structured Outputs**
-   - What we know: OpenAI GPT-4o, Anthropic Claude 3.5/4, Google Gemini support it
-   - What's unclear: Exact list of OpenRouter models supporting `json_schema` response format
-   - Recommendation: Add runtime check - if model doesn't support structured output, fall back to JSON mode + client-side validation.
+3. **Token Budget Enforcement**
+   - What we know: pi-ai's `maxTokens` option controls output tokens
+   - What's unclear: How to enforce total budget (input + output) when input varies?
+   - Recommendation: For v1, just use maxTokens for output; total budget tracking is deferred
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- [OpenRouter API Reference](https://openrouter.ai/docs/api/reference/overview) - Endpoint, authentication, request format
-- [OpenRouter Structured Outputs](https://openrouter.ai/docs/guides/features/structured-outputs) - json_schema response format
-- [OpenRouter API Parameters](https://openrouter.ai/docs/api/reference/parameters) - max_tokens, temperature, response_format
-- [OpenRouter Rate Limits](https://openrouter.ai/docs/api/reference/limits) - Rate limit behavior
-- [OpenRouter Error Handling](https://openrouter.ai/docs/api/reference/errors-and-debugging) - Error codes, 429 handling
-- [Zod v4 JSON Schema](https://zod.dev/json-schema) - z.toJSONSchema() usage and options
-- [Zod API Reference](https://zod.dev/api) - .parse(), .safeParse(), error handling
-- [Zod v4 Release Notes](https://zod.dev/v4) - z.prettifyError(), native JSON Schema
+- pi-ai GitHub repository: https://github.com/badlogic/pi-mono/tree/main/packages/ai
+  - README.md - API overview, streaming, tool calling
+  - src/types.ts - Context, Message, Tool, Model interfaces
+  - src/stream.ts - stream(), complete() functions
+  - src/models.ts - getModel(), Model creation
+  - src/utils/validation.ts - validateToolCall(), AJV setup
+  - src/providers/openai-completions.ts - OpenRouter API handling
+
+- Zod official documentation: https://zod.dev/
+  - https://zod.dev/api - Schema types reference
+  - https://zod.dev/json-schema - Native JSON Schema export in v4
 
 ### Secondary (MEDIUM confidence)
-- [AWS Exponential Backoff and Jitter](https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/) - Full jitter algorithm (verified industry standard)
-- Existing codebase patterns from `src/runtimes/http/source.ts`, `src/runtimes/types.ts`, `src/runtimes/registry.ts`
+- AWS Architecture Blog - Exponential Backoff and Jitter: https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/
+- exponential-backoff npm: https://www.npmjs.com/package/exponential-backoff
 
 ### Tertiary (LOW confidence)
-- WebSearch results on TypeScript DSL parsing - needs validation during implementation
+- Various blog posts on LLM structured output retry patterns (synthesized approach)
 
 ## Metadata
 
 **Confidence breakdown:**
-- Standard stack: HIGH - Using already-installed zod v4 with documented features
-- Architecture: HIGH - Following established NodeRuntime pattern from Phase 3
-- Pitfalls: HIGH - Based on official documentation and industry best practices
-- Schema DSL parser: MEDIUM - Custom implementation needed; design verified but untested
+- Standard stack: HIGH - pi-ai source code reviewed, Zod already in project
+- Architecture: HIGH - Based on pi-ai's actual API and types
+- Schema DSL: MEDIUM - Custom implementation, needs thorough testing
+- Pitfalls: HIGH - Documented in pi-ai issues and LLM best practices
 
 **Research date:** 2026-02-04
-**Valid until:** 30 days (OpenRouter API stable, zod v4 stable)
+**Valid until:** 2026-03-04 (pi-ai under active development, check for updates)

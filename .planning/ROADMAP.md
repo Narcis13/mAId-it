@@ -90,11 +90,12 @@ Plans:
   5. AI node handles rate limits with exponential backoff
   6. AI node respects token budget configuration
   7. Validator checks input/output type compatibility between connected nodes
-**Plans**: TBD
+**Plans**: 3 plans (2 waves)
 
 Plans:
-- [ ] 04-01: TBD
-- [ ] 04-02: TBD
+- [ ] 04-01-PLAN.md — AI infrastructure (types, errors, retry with exponential backoff)
+- [ ] 04-02-PLAN.md — Schema DSL parser (TypeScript-like syntax to zod schemas)
+- [ ] 04-03-PLAN.md — AI runtime (OpenRouter client, template prompts, validation retry)
 
 ### Phase 5: Transform & Control Flow
 **Goal**: Users can transform data and control workflow execution with branches and loops
@@ -177,7 +178,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | 1. Foundation | 5/5 | Complete | 2026-02-02 |
 | 2. Expression & Execution Core | 3/3 | Complete | 2026-02-02 |
 | 3. Source/Sink Runtimes | 3/3 | Complete | 2026-02-02 |
-| 4. AI Integration | 0/2 | Not started | - |
+| 4. AI Integration | 0/3 | Planned | - |
 | 5. Transform & Control Flow | 0/3 | Not started | - |
 | 6. Scheduling & Parallelism | 0/2 | Not started | - |
 | 7. Production Readiness | 0/3 | Not started | - |

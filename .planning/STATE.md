@@ -5,21 +5,21 @@
 See: .planning/PROJECT.md (updated 2025-02-02)
 
 **Core value:** Execute living markdown files as powerful, type-safe workflow programs with AI woven into every layer
-**Current focus:** Phase 4 - AI Integration (Not started)
+**Current focus:** Phase 4 - AI Integration (In progress)
 
 ## Current Position
 
-Phase: 3 of 8 (Source/Sink Runtimes) - VERIFIED
-Plan: 3 of 3 in current phase
-Status: Phase 3 complete, verified
-Last activity: 2026-02-02 - Phase 3 verified and complete
+Phase: 4 of 8 (AI Integration)
+Plan: 1 of 4 in current phase
+Status: In progress
+Last activity: 2026-02-04 - Completed 04-01-PLAN.md
 
-Progress: [████████████░░░░░░░░] 37.5%
+Progress: [████████████░░░░░░░░] 40%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 11
+- Total plans completed: 12
 - Average duration: 4 min
 - Total execution time: 0.7 hours
 
@@ -30,9 +30,10 @@ Progress: [████████████░░░░░░░░] 37.5%
 | 01-foundation | 5 | 22 min | 4 min |
 | 02-expression-execution-core | 3 | 10 min | 3.3 min |
 | 03-source-sink-runtimes | 3 | 7 min | 2.3 min |
+| 04-ai-integration | 1 | 2 min | 2 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-02 (3 min), 02-03 (3 min), 03-01 (3 min), 03-02 (2 min), 03-03 (2 min)
+- Last 5 plans: 02-03 (3 min), 03-01 (3 min), 03-02 (2 min), 03-03 (2 min), 04-01 (2 min)
 - Trend: Stable/Improving
 
 *Updated after each plan completion*
@@ -82,6 +83,10 @@ Recent decisions affecting current work:
 - [03-03]: Auto-format detection: .json extension triggers JSON parsing, else text
 - [03-03]: Bun.file().json() over .text() + JSON.parse() for optimized parsing
 - [03-03]: Import from registry.ts to avoid circular deps (not ../index)
+- [04-01]: AIErrorCode uses four categories: TIMEOUT, RATE_LIMIT, VALIDATION, API_ERROR
+- [04-01]: SchemaValidationError stores failedOutput and validationMessage for retry prompts
+- [04-01]: Full jitter backoff capped at 32 seconds following AWS best practices
+- [04-01]: isRateLimitError detects both status 429 and 'rate limit' in error message
 
 ### Pending Todos
 
@@ -93,8 +98,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-02
-Stopped at: Phase 3 verified and complete
+Last session: 2026-02-04
+Stopped at: Completed 04-01-PLAN.md
 Resume file: None
 
 ## Phase Commits
@@ -104,3 +109,4 @@ Resume file: None
 | 01-foundation | d26a3a0 | .planning/phases/01-foundation | 2026-02-02 |
 | 02-expression-execution-core | 5bbc844 | .planning/phases/02-expression-execution-core | 2026-02-02 |
 | 03-source-sink-runtimes | e15a010 | .planning/phases/03-source-sink-runtimes | 2026-02-02 |
+| 04-ai-integration | e623d91 | .planning/phases/04-ai-integration | 2026-02-04 |

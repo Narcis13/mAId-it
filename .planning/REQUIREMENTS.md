@@ -20,7 +20,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [x] **VALID-01**: Validator checks all required fields present on nodes
 - [x] **VALID-02**: Validator verifies all node references resolve to defined nodes
-- [ ] **VALID-03**: Validator checks input/output type compatibility between connected nodes
+- [x] **VALID-03**: Validator checks input/output type compatibility between connected nodes
 - [x] **VALID-04**: Validator detects circular dependencies and reports clear error
 - [x] **VALID-05**: Validator checks all referenced secrets are declared in frontmatter
 - [x] **VALID-06**: Validator ensures node IDs are unique within scope
@@ -51,13 +51,13 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### AI Runtime
 
-- [ ] **AI-01**: AI node calls OpenRouter API with model selection (claude-3.5-sonnet, gpt-4, etc.)
-- [ ] **AI-02**: AI node supports system prompt and user prompt
-- [ ] **AI-03**: AI node supports prompt templating with workflow data
-- [ ] **AI-04**: AI node validates output against declared schema (using zod)
-- [ ] **AI-05**: AI node retries on schema validation failure
-- [ ] **AI-06**: AI node handles rate limits with backoff
-- [ ] **AI-07**: AI node respects token budget configuration
+- [x] **AI-01**: AI node calls OpenRouter API with model selection (claude-3.5-sonnet, gpt-4, etc.)
+- [x] **AI-02**: AI node supports system prompt and user prompt
+- [x] **AI-03**: AI node supports prompt templating with workflow data
+- [x] **AI-04**: AI node validates output against declared schema (using zod)
+- [x] **AI-05**: AI node retries on schema validation failure
+- [x] **AI-06**: AI node handles rate limits with backoff
+- [x] **AI-07**: AI node respects token budget configuration
 
 ### Transform Nodes
 
@@ -179,7 +179,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PARSE-06 | Phase 1 | Complete |
 | VALID-01 | Phase 1 | Complete |
 | VALID-02 | Phase 1 | Complete |
-| VALID-03 | Phase 4 | Pending |
+| VALID-03 | Phase 4 | Complete |
 | VALID-04 | Phase 1 | Complete |
 | VALID-05 | Phase 1 | Complete |
 | VALID-06 | Phase 1 | Complete |
@@ -198,13 +198,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FILE-03 | Phase 3 | Pending |
 | FILE-04 | Phase 3 | Pending |
 | FILE-05 | Phase 3 | Pending |
-| AI-01 | Phase 4 | Pending |
-| AI-02 | Phase 4 | Pending |
-| AI-03 | Phase 4 | Pending |
-| AI-04 | Phase 4 | Pending |
-| AI-05 | Phase 4 | Pending |
-| AI-06 | Phase 4 | Pending |
-| AI-07 | Phase 4 | Pending |
+| AI-01 | Phase 4 | Complete |
+| AI-02 | Phase 4 | Complete |
+| AI-03 | Phase 4 | Complete |
+| AI-04 | Phase 4 | Complete |
+| AI-05 | Phase 4 | Complete |
+| AI-06 | Phase 4 | Complete |
+| AI-07 | Phase 4 | Complete |
 | TRANS-01 | Phase 5 | Pending |
 | TRANS-02 | Phase 5 | Pending |
 | TRANS-03 | Phase 5 | Pending |

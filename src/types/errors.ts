@@ -36,6 +36,9 @@ export type ErrorCode =
   | 'VALID_DUPLICATE_NODE_ID'
   // Graph validation
   | 'VALID_CIRCULAR_DEPENDENCY'
+  // Type validation (AI schema compatibility)
+  | 'VALID_INVALID_SCHEMA'
+  | 'VALID_TYPE_MISMATCH'
   // Expression errors
   | 'EXPR_PARSE_ERROR'
   | 'EXPR_EVAL_ERROR'

@@ -9,6 +9,7 @@ import type { WorkflowAST, ValidationResult, ValidationError } from '../types';
 import { validateStructural } from './structural';
 import { validateReferences } from './references';
 import { detectCycles, getExecutionOrder } from './cycles';
+import { validateTypeCompatibility } from './types';
 
 /**
  * Validate a parsed workflow AST.
@@ -17,6 +18,7 @@ import { detectCycles, getExecutionOrder } from './cycles';
  * 1. Structural validation - required fields, valid types
  * 2. Reference validation - node refs, secret refs, duplicate IDs
  * 3. Cycle detection - circular dependencies
+ * 4. Type compatibility - AI output schema vs consumer expectations
  *
  * @param ast - The parsed workflow AST
  * @returns ValidationResult with valid flag, errors, and warnings
@@ -55,6 +57,13 @@ export function validate(ast: WorkflowAST): ValidationResult {
   if (!hasReferenceErrors) {
     const cycleResults = detectCycles(ast);
     categorizeErrors(cycleResults, errors, warnings);
+  }
+
+  // Pass 4: Type compatibility validation (only if no prior errors)
+  const hasErrors = errors.length > 0;
+  if (!hasErrors) {
+    const typeResults = validateTypeCompatibility(ast);
+    categorizeErrors(typeResults, errors, warnings);
   }
 
   return {
@@ -117,3 +126,4 @@ export function validateWithOrder(ast: WorkflowAST): {
 export { validateStructural } from './structural';
 export { validateReferences } from './references';
 export { detectCycles, getExecutionOrder } from './cycles';
+export { validateTypeCompatibility } from './types';

@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2025-02-02)
 
 **Core value:** Execute living markdown files as powerful, type-safe workflow programs with AI woven into every layer
-**Current focus:** Phase 4 - AI Integration (In progress)
+**Current focus:** Phase 4 - AI Integration (Complete)
 
 ## Current Position
 
 Phase: 4 of 8 (AI Integration)
-Plan: 2 of 4 in current phase
-Status: In progress
-Last activity: 2026-02-05 - Completed 04-02-PLAN.md
+Plan: 4 of 4 in current phase
+Status: Phase complete
+Last activity: 2026-02-04 - Completed 04-04-PLAN.md
 
-Progress: [█████████████░░░░░░░] 43%
+Progress: [███████████████░░░░░] 50%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 13
-- Average duration: 4 min
-- Total execution time: 0.7 hours
+- Total plans completed: 15
+- Average duration: 3.5 min
+- Total execution time: 0.9 hours
 
 **By Phase:**
 
@@ -30,10 +30,10 @@ Progress: [█████████████░░░░░░░] 43%
 | 01-foundation | 5 | 22 min | 4 min |
 | 02-expression-execution-core | 3 | 10 min | 3.3 min |
 | 03-source-sink-runtimes | 3 | 7 min | 2.3 min |
-| 04-ai-integration | 2 | 4 min | 2 min |
+| 04-ai-integration | 4 | 8 min | 2 min |
 
 **Recent Trend:**
-- Last 5 plans: 03-01 (3 min), 03-02 (2 min), 03-03 (2 min), 04-01 (2 min), 04-02 (2 min)
+- Last 5 plans: 03-02 (2 min), 03-03 (2 min), 04-01 (2 min), 04-02 (2 min), 04-04 (2 min)
 - Trend: Stable/Improving
 
 *Updated after each plan completion*
@@ -90,6 +90,9 @@ Recent decisions affecting current work:
 - [04-02]: Recursive parser with splitByCommaRespectingBraces for nested structures
 - [04-02]: findFirstColonOutsideBraces for correct key:value parsing in nested contexts
 - [04-02]: Object.setPrototypeOf in SchemaDSLError for proper instanceof behavior
+- [04-04]: Warnings not errors for type mismatches since AI output types resolve at runtime
+- [04-04]: Pass 4 placement for type validation (runs only if no prior errors)
+- [04-04]: Field access extraction via pattern {{nodeId.output.field}} extracts 'field' for schema check
 
 ### Pending Todos
 
@@ -101,8 +104,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-05
-Stopped at: Completed 04-02-PLAN.md
+Last session: 2026-02-04
+Stopped at: Completed 04-04-PLAN.md (Phase 04 complete)
 Resume file: None
 
 ## Phase Commits

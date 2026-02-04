@@ -90,6 +90,11 @@ Recent decisions affecting current work:
 - [04-02]: Recursive parser with splitByCommaRespectingBraces for nested structures
 - [04-02]: findFirstColonOutsideBraces for correct key:value parsing in nested contexts
 - [04-02]: Object.setPrototypeOf in SchemaDSLError for proper instanceof behavior
+- [04-03]: Tool calling forces structured output via OpenRouter API
+- [04-03]: Prompts extracted from config.system and config.user (parser child elements)
+- [04-03]: Input added to nodeContext for template resolution
+- [04-03]: AbortSignal.timeout for request timeout (native API)
+- [04-03]: Validation happens after tool call extraction, not during
 - [04-04]: Warnings not errors for type mismatches since AI output types resolve at runtime
 - [04-04]: Pass 4 placement for type validation (runs only if no prior errors)
 - [04-04]: Field access extraction via pattern {{nodeId.output.field}} extracts 'field' for schema check

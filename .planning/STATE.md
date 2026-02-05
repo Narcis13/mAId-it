@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2025-02-02)
 
 **Core value:** Execute living markdown files as powerful, type-safe workflow programs with AI woven into every layer
-**Current focus:** Phase 5 - Transform & Control Flow (In progress)
+**Current focus:** Phase 5 - Transform & Control Flow (Complete)
 
 ## Current Position
 
 Phase: 5 of 8 (Transform & Control Flow)
-Plan: 3 of 4 in current phase
-Status: In progress
-Last activity: 2026-02-05 - Completed 05-03-PLAN.md
+Plan: 4 of 4 in current phase
+Status: Phase complete
+Last activity: 2026-02-05 - Completed 05-04-PLAN.md
 
-Progress: [█████████████████░░░] 60%
+Progress: [██████████████████░░] 65%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 18
-- Average duration: 3.2 min
-- Total execution time: 1.0 hours
+- Total plans completed: 19
+- Average duration: 3.1 min
+- Total execution time: 1.1 hours
 
 **By Phase:**
 
@@ -31,11 +31,11 @@ Progress: [█████████████████░░░] 60%
 | 02-expression-execution-core | 3 | 10 min | 3.3 min |
 | 03-source-sink-runtimes | 3 | 7 min | 2.3 min |
 | 04-ai-integration | 4 | 8 min | 2 min |
-| 05-transform-control-flow | 3 | 6 min | 2 min |
+| 05-transform-control-flow | 4 | 10 min | 2.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 04-02 (2 min), 04-04 (2 min), 05-01 (2 min), 05-02 (2 min), 05-03 (2 min)
-- Trend: Stable/Improving
+- Last 5 plans: 04-04 (2 min), 05-01 (2 min), 05-02 (2 min), 05-03 (2 min), 05-04 (4 min)
+- Trend: Stable
 
 *Updated after each plan completion*
 
@@ -110,6 +110,8 @@ Recent decisions affecting current work:
 - [05-03]: Branch/If evaluate conditions and return which branch to take with bodyNodeIds
 - [05-03]: Loop/While/Foreach return iteration metadata with bodyNodeIds for executor
 - [05-03]: Break/Goto always throw signals, return type is 'never'
+- [05-04]: Auto-registration pattern: import side-effect registers runtimes with global registry
+- [05-04]: Re-export all runtime types and signals from main index for convenient imports
 
 ### Pending Todos
 
@@ -122,7 +124,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-05
-Stopped at: Completed 05-03-PLAN.md
+Stopped at: Completed 05-04-PLAN.md (Phase 5 complete)
 Resume file: None
 
 ## Phase Commits

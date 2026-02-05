@@ -130,11 +130,13 @@ Plans:
   3. Executor runs wave nodes concurrently up to concurrency limit
   4. Parallel block runs child branches simultaneously
   5. Foreach supports max-concurrency attribute to limit parallel iterations
-**Plans**: TBD
+**Plans**: 4 plans (4 waves)
 
 Plans:
-- [ ] 06-01: TBD
-- [ ] 06-02: TBD
+- [ ] 06-01-PLAN.md — Scheduler types, Semaphore, DAG building, and wave computation
+- [ ] 06-02-PLAN.md — Executor with wave processing and concurrency control
+- [ ] 06-03-PLAN.md — Parallel runtime and executor integration
+- [ ] 06-04-PLAN.md — Foreach parallel iteration and integration tests
 
 ### Phase 7: Production Readiness
 **Goal**: Users can rely on workflows recovering from failures and resuming from checkpoints
@@ -182,7 +184,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | 3. Source/Sink Runtimes | 3/3 | Complete | 2026-02-02 |
 | 4. AI Integration | 4/4 | Complete | 2026-02-05 |
 | 5. Transform & Control Flow | 4/4 | Complete | 2026-02-05 |
-| 6. Scheduling & Parallelism | 0/2 | Not started | - |
+| 6. Scheduling & Parallelism | 0/4 | Not started | - |
 | 7. Production Readiness | 0/3 | Not started | - |
 | 8. Full CLI | 0/1 | Not started | - |
 

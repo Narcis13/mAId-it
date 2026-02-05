@@ -7,29 +7,38 @@
  */
 
 import { describe, test, expect, beforeEach, afterEach, mock, spyOn } from 'bun:test';
-import { CheckpointRuntime } from './runtime.ts';
-import type { ExecutionParams } from '../types.ts';
-import type { CheckpointConfig, CheckpointResult } from './types.ts';
-import type { ExecutionState } from '../../execution/types.ts';
-import type { NodeAST } from '../../types/ast.ts';
+import { CheckpointRuntime } from './runtime';
+import type { ExecutionParams } from '../types';
+import type { CheckpointConfig, CheckpointResult } from './types';
+import type { ExecutionState } from '../../execution/types';
+import type { CheckpointNode } from '../../types/ast';
 
 // Helper to create execution params
 function createParams(config: CheckpointConfig): ExecutionParams<CheckpointConfig, unknown> {
-  const node: NodeAST = {
+  const node: CheckpointNode = {
     id: 'test-checkpoint',
     type: 'checkpoint',
-    config: {},
-    loc: { start: { line: 1, column: 0 }, end: { line: 1, column: 10 } },
+    prompt: config.message,
+    timeout: config.timeout,
+    defaultAction: config.defaultAction,
+    loc: {
+      start: { line: 1, column: 0, offset: 0 },
+      end: { line: 1, column: 10, offset: 10 },
+    },
   };
 
   const state: ExecutionState = {
+    workflowId: 'test-workflow',
+    runId: 'test-run',
+    status: 'running',
+    currentWave: 0,
+    startedAt: Date.now(),
     globalContext: {},
     phaseContext: {},
     nodeContext: {},
     nodeResults: new Map(),
+    config: {},
     secrets: {},
-    executedNodes: new Set(),
-    phaseId: 'test-phase',
   };
 
   return { node, input: undefined, config, state };

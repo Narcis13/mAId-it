@@ -52,6 +52,9 @@ import './transform/index.ts';
 // Side-effect import: auto-registers Control runtimes
 import './control/index.ts';
 
+// Side-effect import: auto-registers Checkpoint runtime
+import './checkpoint/index.ts';
+
 // Re-export HTTP runtimes for convenience
 export { httpSourceRuntime, httpSinkRuntime } from './http/index.ts';
 
@@ -98,3 +101,9 @@ export type {
   ForeachResult,
 } from './control/index.ts';
 export { BreakSignal, GotoSignal, DEFAULT_MAX_ITERATIONS } from './control/index.ts';
+
+// Re-export Checkpoint runtime for convenience
+export { checkpointRuntime, CheckpointRuntime } from './checkpoint/index.ts';
+
+// Re-export Checkpoint types
+export type { CheckpointConfig, CheckpointResult, CheckpointAction } from './checkpoint/index.ts';

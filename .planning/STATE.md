@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2025-02-02)
 
 **Core value:** Execute living markdown files as powerful, type-safe workflow programs with AI woven into every layer
-**Current focus:** Phase 8 - Full CLI (Not started)
+**Current focus:** Phase 8 - Full CLI (In progress)
 
 ## Current Position
 
-Phase: 7 of 8 (Production Readiness) - VERIFIED
-Plan: 5 of 5 in current phase
-Status: Phase 7 complete and verified
-Last activity: 2026-02-05 - Phase 7 verified and complete
+Phase: 8 of 8 (Full CLI)
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-02-05 - Completed 08-01-PLAN.md (run command)
 
-Progress: [█████████████████████████████] 96%
+Progress: [█████████████████████████████░] 97%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 28
+- Total plans completed: 29
 - Average duration: 2.8 min
-- Total execution time: 1.52 hours
+- Total execution time: 1.59 hours
 
 **By Phase:**
 
@@ -34,9 +34,10 @@ Progress: [███████████████████████
 | 05-transform-control-flow | 4 | 10 min | 2.5 min |
 | 06-scheduling-parallelism | 4 | 11 min | 2.75 min |
 | 07-production-readiness | 5 | 13 min | 2.6 min |
+| 08-full-cli | 1 | 4 min | 4 min |
 
 **Recent Trend:**
-- Last 5 plans: 07-01 (2 min), 07-02 (2 min), 07-03 (3 min), 07-04 (3 min), 07-05 (3 min)
+- Last 5 plans: 07-02 (2 min), 07-03 (3 min), 07-04 (3 min), 07-05 (3 min), 08-01 (4 min)
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -149,6 +150,9 @@ Recent decisions affecting current work:
 - [07-05]: Logging happens in finally block for both success and failure (valuable audit info)
 - [07-05]: Log write errors caught and logged but don't mask execution errors
 - [07-05]: 61 integration tests cover retry, persistence, error handler, logging
+- [08-01]: Secrets resolved from environment variables at runtime (metadata.secrets is just name list)
+- [08-01]: Config overrides support JSON auto-parsing with string fallback
+- [08-01]: Execute all waves atomically via execute() - spinner shows total wave count
 
 ### Pending Todos
 
@@ -161,7 +165,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-05
-Stopped at: Phase 7 complete and verified
+Stopped at: Completed 08-01-PLAN.md (run command)
 Resume file: None
 
 ## Phase Commits
@@ -175,3 +179,4 @@ Resume file: None
 | 05-transform-control-flow | 3b51b0d | .planning/phases/05-transform-control-flow | 2026-02-05 |
 | 06-scheduling-parallelism | c75e8f6 | .planning/phases/06-scheduling-parallelism | 2026-02-05 |
 | 07-production-readiness | 183c281 | .planning/phases/07-production-readiness | 2026-02-05 |
+| 08-full-cli | a5e41aa | .planning/phases/08-full-cli | 2026-02-05 |

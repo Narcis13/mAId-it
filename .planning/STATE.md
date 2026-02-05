@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2025-02-02)
 ## Current Position
 
 Phase: 6 of 8 (Scheduling & Parallelism)
-Plan: 2 of 4 in current phase
+Plan: 3 of 4 in current phase
 Status: In progress
-Last activity: 2026-02-05 - Completed 06-02-PLAN.md
+Last activity: 2026-02-05 - Completed 06-03-PLAN.md
 
-Progress: [████████████████████░] 72%
+Progress: [█████████████████████░] 76%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 21
+- Total plans completed: 22
 - Average duration: 2.9 min
-- Total execution time: 1.1 hours
+- Total execution time: 1.2 hours
 
 **By Phase:**
 
@@ -32,10 +32,10 @@ Progress: [████████████████████░] 72%
 | 03-source-sink-runtimes | 3 | 7 min | 2.3 min |
 | 04-ai-integration | 4 | 8 min | 2 min |
 | 05-transform-control-flow | 4 | 10 min | 2.5 min |
-| 06-scheduling-parallelism | 2 | 4 min | 2 min |
+| 06-scheduling-parallelism | 3 | 7 min | 2.3 min |
 
 **Recent Trend:**
-- Last 5 plans: 05-02 (2 min), 05-03 (2 min), 05-04 (4 min), 06-01 (2 min), 06-02 (2 min)
+- Last 5 plans: 05-03 (2 min), 05-04 (4 min), 06-01 (2 min), 06-02 (2 min), 06-03 (3 min)
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -122,6 +122,10 @@ Recent decisions affecting current work:
 - [06-02]: nodeResults shared across cloned states (nodeId provides isolation)
 - [06-02]: Fail-fast error handling: first error stops wave and throws
 - [06-02]: Node output exposed in nodeContext for expression access
+- [06-03]: ParallelResult contains branches array, branchCount, and optional maxConcurrency
+- [06-03]: cloneStateForBranch injects $branch index into nodeContext for branch identification
+- [06-03]: Branch-specific maxConcurrency overrides global if provided
+- [06-03]: Fail-fast error handling: first branch error surfaced immediately
 
 ### Pending Todos
 
@@ -134,7 +138,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-05
-Stopped at: Completed 06-02-PLAN.md
+Stopped at: Completed 06-03-PLAN.md
 Resume file: None
 
 ## Phase Commits

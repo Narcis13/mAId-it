@@ -14,27 +14,27 @@ If this doesn't work — parsing, validating, and running `.flow.md` files with 
 
 ### Validated
 
-(None yet — ship to validate)
+- ✓ Parse `.flow.md` files (YAML frontmatter + XML body + Markdown footer) — v1.0
+- ✓ Validate workflows against type system and schemas — v1.0
+- ✓ Execute nodes sequentially with data flowing between them — v1.0
+- ✓ Execute nodes in parallel (wave-based DAG scheduler) — v1.0
+- ✓ Full control flow: `<branch>`, `<match>`, `<if>`, `<loop>`, `<while>`, `<foreach>`, `<break>` — v1.0
+- ✓ Core source nodes: `http`, `file` — v1.0
+- ✓ Core transform nodes: `ai`, `template`, `map`, `filter` — v1.0
+- ✓ Core sink nodes: `http`, `file` — v1.0
+- ✓ AI integration via OpenRouter (model-agnostic: Claude, GPT, etc.) — v1.0
+- ✓ Structured AI output with schema validation — v1.0
+- ✓ Expression language with variable references and built-in functions — v1.0
+- ✓ Error handling: retry with backoff, fallback — v1.0
+- ✓ File-based state persistence — v1.0
+- ✓ Context hierarchy (global → phase → node) — v1.0
+- ✓ CLI interface: `flowscript run`, `flowscript validate` — v1.0
+- ✓ CLI-based checkpoints for human approval — v1.0
+- ✓ Execution logging in markdown footer — v1.0
 
 ### Active
 
-- [ ] Parse `.flow.md` files (YAML frontmatter + XML body + Markdown footer)
-- [ ] Validate workflows against type system and schemas
-- [ ] Execute nodes sequentially with data flowing between them
-- [ ] Execute nodes in parallel (wave-based DAG scheduler)
-- [ ] Full control flow: `<branch>`, `<match>`, `<if>`, `<loop>`, `<while>`, `<foreach>`, `<break>`
-- [ ] Core source nodes: `http`, `file`
-- [ ] Core transform nodes: `ai`, `template`, `map`, `filter`
-- [ ] Core sink nodes: `http`, `file`
-- [ ] AI integration via OpenRouter (model-agnostic: Claude, GPT, etc.)
-- [ ] Structured AI output with schema validation
-- [ ] Expression language with variable references and built-in functions
-- [ ] Error handling: retry with backoff, fallback
-- [ ] File-based state persistence
-- [ ] Context hierarchy (global → phase → node)
-- [ ] CLI interface: `flowscript run`, `flowscript validate`
-- [ ] CLI-based checkpoints for human approval
-- [ ] Execution logging in markdown footer
+(None yet — define for next milestone)
 
 ### Out of Scope
 
@@ -49,19 +49,24 @@ If this doesn't work — parsing, validating, and running `.flow.md` files with 
 
 ## Context
 
-Design documents exist in this directory:
+**Current State (v1.0 shipped):**
+- 17,726 lines of TypeScript across 95 files
+- Tech stack: Bun, TypeScript, jsep (expressions), Luxon (dates), zod (schemas)
+- 386+ tests passing
+- Full CLI: `flowscript validate` and `flowscript run`
+
+**Design Documents:**
 - `WORKFLOW-ENGINE-BRAINSTORM.md` — Core concepts, node architecture, runtime design
 - `WORKFLOW-ENGINE-PARADIGM-SHIFTS.md` — 10 revolutionary concepts
 - `WORKFLOW-ENGINE-SPEC.md` — Formal syntax specification
 
-The design is comprehensive. v1 implements Phases 1-2 from the brainstorm (Core Engine + AI Integration) with full control flow and parallel execution.
-
-**Key architectural decisions from spec:**
+**Key Architectural Patterns:**
 - Three-part file format: YAML → XML → Markdown
-- Typed data flow between nodes
+- Typed data flow between nodes with schema validation
 - Expression language for templating (`{{node.output}}`, `$config.key`)
 - Pattern matching for branch conditions
-- Wave-based parallel execution
+- Wave-based parallel execution with DAG scheduling
+- Semaphore-based concurrency control
 
 ## Constraints
 
@@ -75,11 +80,15 @@ The design is comprehensive. v1 implements Phases 1-2 from the brainstorm (Core 
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Bun over Node | Faster startup, native TypeScript, modern APIs | — Pending |
-| OpenRouter for AI | Model-agnostic, single API for Claude/GPT/etc. | — Pending |
-| File-based state for v1 | Simplicity over flexibility, pluggable backends in v2 | — Pending |
-| XML for execution logic | Self-documenting, easy to parse, readable in PRs | — Pending |
-| Wave-based parallelism | Proven pattern from design, enables `<parallel>` and `<foreach>` | — Pending |
+| Bun over Node | Faster startup, native TypeScript, modern APIs | ✓ Good — 17k LOC works great |
+| OpenRouter for AI | Model-agnostic, single API for Claude/GPT/etc. | ✓ Good — tool calling works |
+| File-based state for v1 | Simplicity over flexibility, pluggable backends in v2 | ✓ Good — resume works |
+| XML for execution logic | Self-documenting, easy to parse, readable in PRs | ✓ Good — clean AST |
+| Wave-based parallelism | Proven pattern from design, enables `<parallel>` and `<foreach>` | ✓ Good — clean DAG scheduling |
+| jsep for expressions | Lightweight, extensible, no eval() | ✓ Good — sandboxed |
+| Luxon for dates | ESM-native, robust timezone handling | ✓ Good — 115 functions |
+| Tool calling for AI output | Forces structured JSON, better than prompt-only | ✓ Good — schema validation works |
+| Semaphore for concurrency | Simple, battle-tested pattern | ✓ Good — parallel execution works |
 
 ---
-*Last updated: 2025-02-02 after initialization*
+*Last updated: 2026-02-05 after v1.0 milestone*

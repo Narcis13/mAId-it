@@ -145,3 +145,23 @@ export interface GotoConfig {
   /** Target node ID to jump to (required) */
   target: string;
 }
+
+// ============================================================================
+// Parallel Configuration Types
+// ============================================================================
+
+/**
+ * Configuration for parallel blocks.
+ *
+ * @example
+ * ```xml
+ * <parallel id="fetch-all" maxConcurrency="3">
+ *   <branch>...</branch>
+ *   <branch>...</branch>
+ * </parallel>
+ * ```
+ */
+export interface ParallelConfig {
+  /** Maximum concurrent branches (default: all branches) */
+  maxConcurrency?: number;
+}

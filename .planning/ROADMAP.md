@@ -19,7 +19,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 5: Transform & Control Flow** - Transform nodes and control flow constructs
 - [x] **Phase 6: Scheduling & Parallelism** - DAG scheduler and wave-based parallel execution
 - [x] **Phase 7: Production Readiness** - Error handling, state persistence, checkpoints, logging
-- [ ] **Phase 8: Full CLI** - Complete CLI with all options and polish
+- [x] **Phase 8: Full CLI** - Complete CLI with all options and polish
 
 ## Phase Details
 
@@ -172,8 +172,8 @@ Plans:
 **Plans**: 2 plans (2 waves)
 
 Plans:
-- [ ] 08-01-PLAN.md — Run command implementation with all options (dry-run, config, input)
-- [ ] 08-02-PLAN.md — Comprehensive tests for run command
+- [x] 08-01-PLAN.md — Run command implementation with all options (dry-run, config, input)
+- [x] 08-02-PLAN.md — Comprehensive tests for run command
 
 ## Progress
 
@@ -189,7 +189,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | 5. Transform & Control Flow | 4/4 | Complete | 2026-02-05 |
 | 6. Scheduling & Parallelism | 4/4 | Complete | 2026-02-05 |
 | 7. Production Readiness | 5/5 | Complete | 2026-02-05 |
-| 8. Full CLI | 0/2 | Not started | - |
+| 8. Full CLI | 2/2 | Complete | 2026-02-05 |
 
 ---
 *Roadmap created: 2025-02-02*

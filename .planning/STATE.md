@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2025-02-02)
 
 **Core value:** Execute living markdown files as powerful, type-safe workflow programs with AI woven into every layer
-**Current focus:** Phase 8 - Full CLI (Complete)
+**Current focus:** v1.0 Milestone complete!
 
 ## Current Position
 
-Phase: 8 of 8 (Full CLI)
+Phase: 8 of 8 (Full CLI) - VERIFIED
 Plan: 2 of 2 in current phase
-Status: Phase complete
-Last activity: 2026-02-05 - Completed 08-02-PLAN.md (run command tests)
+Status: Milestone complete
+Last activity: 2026-02-05 - Phase 8 verified and complete
 
 Progress: [████████████████████████████████] 100%
 

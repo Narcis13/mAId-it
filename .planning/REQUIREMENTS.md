@@ -35,19 +35,19 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### HTTP Runtime
 
-- [ ] **HTTP-01**: HTTP source node makes GET requests with headers and params
-- [ ] **HTTP-02**: HTTP source node makes POST requests with JSON body
-- [ ] **HTTP-03**: HTTP source node supports bearer token authentication
-- [ ] **HTTP-04**: HTTP sink node posts data to external endpoints
-- [ ] **HTTP-05**: HTTP nodes support response extraction via JSONPath
+- [x] **HTTP-01**: HTTP source node makes GET requests with headers and params
+- [x] **HTTP-02**: HTTP source node makes POST requests with JSON body
+- [x] **HTTP-03**: HTTP source node supports bearer token authentication
+- [x] **HTTP-04**: HTTP sink node posts data to external endpoints
+- [x] **HTTP-05**: HTTP nodes support response extraction via JSONPath
 
 ### File Runtime
 
-- [ ] **FILE-01**: File source node reads JSON files and parses content
-- [ ] **FILE-02**: File source node reads text files as string
-- [ ] **FILE-03**: File sink node writes JSON data to files
-- [ ] **FILE-04**: File sink node writes text content to files
-- [ ] **FILE-05**: File paths support template expressions
+- [x] **FILE-01**: File source node reads JSON files and parses content
+- [x] **FILE-02**: File source node reads text files as string
+- [x] **FILE-03**: File sink node writes JSON data to files
+- [x] **FILE-04**: File sink node writes text content to files
+- [x] **FILE-05**: File paths support template expressions
 
 ### AI Runtime
 
@@ -85,41 +85,41 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Error Handling
 
-- [ ] **ERR-01**: Nodes support retry with exponential backoff
-- [ ] **ERR-02**: Retry includes jitter to prevent thundering herd
-- [ ] **ERR-03**: Nodes support fallback to alternative node on failure
-- [ ] **ERR-04**: Nodes support configurable timeout
-- [ ] **ERR-05**: Workflow-level error handler captures unhandled failures
+- [x] **ERR-01**: Nodes support retry with exponential backoff
+- [x] **ERR-02**: Retry includes jitter to prevent thundering herd
+- [x] **ERR-03**: Nodes support fallback to alternative node on failure
+- [x] **ERR-04**: Nodes support configurable timeout
+- [x] **ERR-05**: Workflow-level error handler captures unhandled failures
 
 ### State & Persistence
 
-- [ ] **STATE-01**: Engine persists execution state to JSON file after each wave
-- [ ] **STATE-02**: Engine can resume failed workflow from last checkpoint
+- [x] **STATE-01**: Engine persists execution state to JSON file after each wave
+- [x] **STATE-02**: Engine can resume failed workflow from last checkpoint
 - [x] **STATE-03**: Engine tracks node outputs for expression resolution
 - [x] **STATE-04**: Context hierarchy (global -> phase -> node) is maintained
 
 ### CLI
 
 - [x] **CLI-01**: `flowscript validate <file>` validates workflow without executing
-- [ ] **CLI-02**: `flowscript run <file>` executes workflow and shows progress
-- [ ] **CLI-03**: `flowscript run --dry-run` validates and shows execution plan
+- [x] **CLI-02**: `flowscript run <file>` executes workflow and shows progress
+- [x] **CLI-03**: `flowscript run --dry-run` validates and shows execution plan
 - [x] **CLI-04**: CLI displays clear error messages with source locations
-- [ ] **CLI-05**: CLI supports `--config key=value` overrides
-- [ ] **CLI-06**: CLI supports `--input '{"field": "value"}'` for workflow input
+- [x] **CLI-05**: CLI supports `--config key=value` overrides
+- [x] **CLI-06**: CLI supports `--input '{"field": "value"}'` for workflow input
 
 ### Checkpoints
 
-- [ ] **CHKPT-01**: Checkpoint node pauses execution and prompts in terminal
-- [ ] **CHKPT-02**: User can approve, reject, or provide input at checkpoint
-- [ ] **CHKPT-03**: Checkpoint supports timeout with default action
-- [ ] **CHKPT-04**: Checkpoint response is available to downstream nodes
+- [x] **CHKPT-01**: Checkpoint node pauses execution and prompts in terminal
+- [x] **CHKPT-02**: User can approve, reject, or provide input at checkpoint
+- [x] **CHKPT-03**: Checkpoint supports timeout with default action
+- [x] **CHKPT-04**: Checkpoint response is available to downstream nodes
 
 ### Execution Logging
 
-- [ ] **LOG-01**: Engine appends execution log to markdown footer
-- [ ] **LOG-02**: Log includes run ID, timestamp, duration, status
-- [ ] **LOG-03**: Log includes per-node timing and status
-- [ ] **LOG-04**: Log is human-readable markdown format
+- [x] **LOG-01**: Engine appends execution log to markdown footer
+- [x] **LOG-02**: Log includes run ID, timestamp, duration, status
+- [x] **LOG-03**: Log includes per-node timing and status
+- [x] **LOG-04**: Log is human-readable markdown format
 
 ## v2 Requirements
 
@@ -188,16 +188,16 @@ Which phases cover which requirements. Updated during roadmap creation.
 | EXPR-03 | Phase 2 | Complete |
 | EXPR-04 | Phase 2 | Complete |
 | EXPR-05 | Phase 2 | Complete |
-| HTTP-01 | Phase 3 | Pending |
-| HTTP-02 | Phase 3 | Pending |
-| HTTP-03 | Phase 3 | Pending |
-| HTTP-04 | Phase 3 | Pending |
-| HTTP-05 | Phase 3 | Pending |
-| FILE-01 | Phase 3 | Pending |
-| FILE-02 | Phase 3 | Pending |
-| FILE-03 | Phase 3 | Pending |
-| FILE-04 | Phase 3 | Pending |
-| FILE-05 | Phase 3 | Pending |
+| HTTP-01 | Phase 3 | Complete |
+| HTTP-02 | Phase 3 | Complete |
+| HTTP-03 | Phase 3 | Complete |
+| HTTP-04 | Phase 3 | Complete |
+| HTTP-05 | Phase 3 | Complete |
+| FILE-01 | Phase 3 | Complete |
+| FILE-02 | Phase 3 | Complete |
+| FILE-03 | Phase 3 | Complete |
+| FILE-04 | Phase 3 | Complete |
+| FILE-05 | Phase 3 | Complete |
 | AI-01 | Phase 4 | Complete |
 | AI-02 | Phase 4 | Complete |
 | AI-03 | Phase 4 | Complete |
@@ -220,29 +220,29 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PARA-03 | Phase 6 | Complete |
 | PARA-04 | Phase 6 | Complete |
 | PARA-05 | Phase 6 | Complete |
-| ERR-01 | Phase 7 | Pending |
-| ERR-02 | Phase 7 | Pending |
-| ERR-03 | Phase 7 | Pending |
-| ERR-04 | Phase 7 | Pending |
-| ERR-05 | Phase 7 | Pending |
-| STATE-01 | Phase 7 | Pending |
-| STATE-02 | Phase 7 | Pending |
+| ERR-01 | Phase 7 | Complete |
+| ERR-02 | Phase 7 | Complete |
+| ERR-03 | Phase 7 | Complete |
+| ERR-04 | Phase 7 | Complete |
+| ERR-05 | Phase 7 | Complete |
+| STATE-01 | Phase 7 | Complete |
+| STATE-02 | Phase 7 | Complete |
 | STATE-03 | Phase 2 | Complete |
 | STATE-04 | Phase 2 | Complete |
 | CLI-01 | Phase 1 | Complete |
-| CLI-02 | Phase 8 | Pending |
-| CLI-03 | Phase 8 | Pending |
+| CLI-02 | Phase 8 | Complete |
+| CLI-03 | Phase 8 | Complete |
 | CLI-04 | Phase 1 | Complete |
-| CLI-05 | Phase 8 | Pending |
-| CLI-06 | Phase 8 | Pending |
-| CHKPT-01 | Phase 7 | Pending |
-| CHKPT-02 | Phase 7 | Pending |
-| CHKPT-03 | Phase 7 | Pending |
-| CHKPT-04 | Phase 7 | Pending |
-| LOG-01 | Phase 7 | Pending |
-| LOG-02 | Phase 7 | Pending |
-| LOG-03 | Phase 7 | Pending |
-| LOG-04 | Phase 7 | Pending |
+| CLI-05 | Phase 8 | Complete |
+| CLI-06 | Phase 8 | Complete |
+| CHKPT-01 | Phase 7 | Complete |
+| CHKPT-02 | Phase 7 | Complete |
+| CHKPT-03 | Phase 7 | Complete |
+| CHKPT-04 | Phase 7 | Complete |
+| LOG-01 | Phase 7 | Complete |
+| LOG-02 | Phase 7 | Complete |
+| LOG-03 | Phase 7 | Complete |
+| LOG-04 | Phase 7 | Complete |
 
 **Coverage:**
 - v1 requirements: 60 total

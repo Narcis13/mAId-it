@@ -16,26 +16,33 @@ const TEST_STATE_DIR = join(import.meta.dir, '__test-resume-state__');
 
 // Helper to create a minimal workflow AST
 function createTestAST(nodeCount: number = 3): WorkflowAST {
-  const nodes = [];
+  const nodes: WorkflowAST['nodes'] = [];
   for (let i = 0; i < nodeCount; i++) {
     nodes.push({
-      type: 'source' as const,
+      type: 'source',
       sourceType: 'http',
       id: `node-${i}`,
       config: { url: `https://example.com/${i}` },
-      location: { line: i + 2, column: 1 },
+      loc: {
+        start: { line: i + 2, column: 1, offset: 0 },
+        end: { line: i + 2, column: 50, offset: 50 },
+      },
       input: i > 0 ? `node-${i - 1}` : undefined,
     });
   }
 
   return {
-    version: '1.0',
     metadata: {
       name: 'test-workflow',
+      version: '1.0.0',
       description: 'Test workflow',
     },
     nodes,
-    raw: '<workflow></workflow>',
+    sourceMap: {
+      source: '<workflow></workflow>',
+      filePath: 'test.flow.md',
+      lineOffsets: [0],
+    },
   };
 }
 

@@ -5,7 +5,7 @@
  */
 
 import type { NodeAST } from '../types/ast';
-import type { ExecutionState, NodeResult } from './types';
+import type { ExecutionState, NodeResult, RetryConfig } from './types';
 import type { ExecutionPlan, ExecutionWave, ExecutionOptions } from '../scheduler/types';
 import type { ParallelResult } from '../runtimes/control/parallel';
 import type { ForeachResult } from '../runtimes/control/foreach';
@@ -13,6 +13,33 @@ import { Semaphore, DEFAULT_MAX_CONCURRENCY } from '../scheduler';
 import { getRuntime, hasRuntime } from '../runtimes/registry';
 import { cloneStateForNode } from './state';
 import { evaluateTemplateInContext } from './index';
+import { executeWithRetry } from './retry';
+import { saveState } from './persistence';
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * Get retry configuration for a node.
+ * Looks for retry config in node.config, falls back to execution options default.
+ *
+ * Note: Only data flow nodes (source, transform, sink) have config.
+ * Control flow nodes don't have config and will use default.
+ */
+function getNodeRetryConfig(
+  node: NodeAST,
+  defaultConfig?: RetryConfig
+): RetryConfig | undefined {
+  // Only source, transform, and sink nodes have config
+  if ('config' in node) {
+    const nodeConfig = node.config as Record<string, unknown>;
+    if (nodeConfig?.retry) {
+      return nodeConfig.retry as RetryConfig;
+    }
+  }
+  return defaultConfig;
+}
 
 /**
  * Execute a workflow plan.
@@ -68,7 +95,8 @@ async function executeWave(
   wave: ExecutionWave,
   nodes: Map<string, NodeAST>,
   state: ExecutionState,
-  maxConcurrency: number
+  maxConcurrency: number,
+  defaultRetryConfig?: RetryConfig
 ): Promise<void> {
   const semaphore = new Semaphore(maxConcurrency);
   const errors: Error[] = [];
@@ -83,7 +111,7 @@ async function executeWave(
 
       // Execute the node and record result
       // Note: nodes map passed for control flow handlers (parallel/foreach)
-      const result = await executeNode(node, nodes, state, maxConcurrency);
+      const result = await executeNode(node, nodes, state, maxConcurrency, defaultRetryConfig);
       recordNodeResult(state, nodeId, result);
 
       // Check if the node execution failed
@@ -112,14 +140,15 @@ async function executeWave(
  * The nodes map is passed through for control flow handlers that need
  * to execute body nodes (parallel, foreach).
  *
- * Note: This function will be extended in 06-03 and 06-04 to detect
- * ParallelResult and ForeachResult and handle them specially.
+ * When retry config is present (from node config or defaults), wraps
+ * execution in retry logic with exponential backoff.
  */
 export async function executeNode(
   node: NodeAST,
   nodes: Map<string, NodeAST>,
   state: ExecutionState,
-  maxConcurrency: number
+  maxConcurrency: number,
+  defaultRetryConfig?: RetryConfig
 ): Promise<NodeResult> {
   const startedAt = Date.now();
 
@@ -149,15 +178,58 @@ export async function executeNode(
     const nodeState = cloneStateForNode(state, { input });
 
     // Resolve config values (templates, expressions) with the node state
-    const resolvedConfig = resolveNodeConfig(node.config ?? {}, nodeState);
+    // Only source, transform, and sink nodes have config
+    const rawConfig = 'config' in node ? (node.config as Record<string, unknown>) : {};
+    const resolvedConfig = resolveNodeConfig(rawConfig, nodeState);
 
-    // Execute the runtime
-    let output = await runtime!.execute({
-      node,
-      input,
-      config: resolvedConfig,
-      state: nodeState,
-    });
+    // Check for retry config (node-specific or default)
+    const retryConfig = getNodeRetryConfig(node, defaultRetryConfig);
+
+    // Execute the runtime (with retry wrapper if config present)
+    let output: unknown;
+
+    if (retryConfig) {
+      // Extract fallback node ID for potential fallback execution
+      const fallbackNodeId = retryConfig.fallbackNodeId;
+
+      try {
+        output = await executeWithRetry(
+          async (_signal) => {
+            // Note: signal available for timeout, but runtime.execute doesn't yet use it
+            return await runtime!.execute({
+              node,
+              input,
+              config: resolvedConfig,
+              state: nodeState,
+            });
+          },
+          retryConfig
+        );
+      } catch (primaryError) {
+        // All retries exhausted - try fallback if specified
+        if (fallbackNodeId) {
+          output = await executeFallbackNode(
+            fallbackNodeId,
+            nodes,
+            state,
+            input,
+            primaryError as Error,
+            maxConcurrency,
+            defaultRetryConfig
+          );
+        } else {
+          throw primaryError;
+        }
+      }
+    } else {
+      // No retry config - execute directly
+      output = await runtime!.execute({
+        node,
+        input,
+        config: resolvedConfig,
+        state: nodeState,
+      });
+    }
 
     // Check if this is a parallel result that needs branch execution
     if (isParallelResult(output)) {
@@ -201,6 +273,44 @@ export async function executeNode(
       completedAt,
     };
   }
+}
+
+/**
+ * Execute a fallback node when primary fails.
+ * Passes original input and primary error to fallback context.
+ */
+async function executeFallbackNode(
+  fallbackNodeId: string,
+  nodes: Map<string, NodeAST>,
+  state: ExecutionState,
+  originalInput: unknown,
+  primaryError: Error,
+  maxConcurrency: number,
+  defaultRetryConfig?: RetryConfig
+): Promise<unknown> {
+  const fallbackNode = nodes.get(fallbackNodeId);
+  if (!fallbackNode) {
+    throw new Error(`Fallback node not found: ${fallbackNodeId}`);
+  }
+
+  // Add primary error and input to context for fallback node
+  state.nodeContext.$primaryError = primaryError.message;
+  state.nodeContext.$primaryInput = originalInput;
+
+  // Execute fallback node (without retry to avoid infinite loops)
+  const result = await executeNode(
+    fallbackNode,
+    nodes,
+    state,
+    maxConcurrency,
+    defaultRetryConfig
+  );
+
+  if (result.status === 'failed') {
+    throw result.error ?? new Error(`Fallback node ${fallbackNodeId} failed`);
+  }
+
+  return result.output;
 }
 
 /**

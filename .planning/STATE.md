@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2025-02-02)
 
 **Core value:** Execute living markdown files as powerful, type-safe workflow programs with AI woven into every layer
-**Current focus:** Phase 8 - Full CLI (In progress)
+**Current focus:** Phase 8 - Full CLI (Complete)
 
 ## Current Position
 
 Phase: 8 of 8 (Full CLI)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-02-05 - Completed 08-01-PLAN.md (run command)
+Plan: 2 of 2 in current phase
+Status: Phase complete
+Last activity: 2026-02-05 - Completed 08-02-PLAN.md (run command tests)
 
-Progress: [█████████████████████████████░] 97%
+Progress: [████████████████████████████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 29
+- Total plans completed: 30
 - Average duration: 2.8 min
-- Total execution time: 1.59 hours
+- Total execution time: 1.63 hours
 
 **By Phase:**
 
@@ -34,10 +34,10 @@ Progress: [███████████████████████
 | 05-transform-control-flow | 4 | 10 min | 2.5 min |
 | 06-scheduling-parallelism | 4 | 11 min | 2.75 min |
 | 07-production-readiness | 5 | 13 min | 2.6 min |
-| 08-full-cli | 1 | 4 min | 4 min |
+| 08-full-cli | 2 | 7 min | 3.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 07-02 (2 min), 07-03 (3 min), 07-04 (3 min), 07-05 (3 min), 08-01 (4 min)
+- Last 5 plans: 07-03 (3 min), 07-04 (3 min), 07-05 (3 min), 08-01 (4 min), 08-02 (3 min)
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -153,6 +153,9 @@ Recent decisions affecting current work:
 - [08-01]: Secrets resolved from environment variables at runtime (metadata.secrets is just name list)
 - [08-01]: Config overrides support JSON auto-parsing with string fallback
 - [08-01]: Execute all waves atomically via execute() - spinner shows total wave count
+- [08-02]: Dry-run mode displays config/input but does not validate them (early return design)
+- [08-02]: parseConfigOverrides tested separately from runWorkflow for unit coverage
+- [08-02]: Test fixture uses http source + template transform for realistic coverage
 
 ### Pending Todos
 
@@ -165,7 +168,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-05
-Stopped at: Completed 08-01-PLAN.md (run command)
+Stopped at: Completed 08-02-PLAN.md (run command tests)
 Resume file: None
 
 ## Phase Commits

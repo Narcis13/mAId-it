@@ -10,6 +10,24 @@
  * enabling workflows to reshape, extract, and filter data between operations.
  */
 
+import { templateRuntime } from './template.ts';
+import { mapRuntime } from './map.ts';
+import { filterRuntime } from './filter.ts';
+import { runtimeRegistry } from '../registry.ts';
+
+// ============================================================================
+// Auto-Registration
+// ============================================================================
+
+// Register Transform runtimes when module is imported
+runtimeRegistry.register(templateRuntime);
+runtimeRegistry.register(mapRuntime);
+runtimeRegistry.register(filterRuntime);
+
+// ============================================================================
+// Exports
+// ============================================================================
+
 // Re-export types
 export type {
   TemplateConfig,

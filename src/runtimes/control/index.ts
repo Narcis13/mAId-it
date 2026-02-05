@@ -15,6 +15,28 @@
  * caught by the executor for control flow handling.
  */
 
+import { branchRuntime } from './branch.ts';
+import { ifRuntime } from './if.ts';
+import { loopRuntime } from './loop.ts';
+import { whileRuntime } from './while.ts';
+import { foreachRuntime } from './foreach.ts';
+import { breakRuntime } from './break.ts';
+import { gotoRuntime } from './goto.ts';
+import { runtimeRegistry } from '../registry.ts';
+
+// ============================================================================
+// Auto-Registration
+// ============================================================================
+
+// Register Control runtimes when module is imported
+runtimeRegistry.register(branchRuntime);
+runtimeRegistry.register(ifRuntime);
+runtimeRegistry.register(loopRuntime);
+runtimeRegistry.register(whileRuntime);
+runtimeRegistry.register(foreachRuntime);
+runtimeRegistry.register(breakRuntime);
+runtimeRegistry.register(gotoRuntime);
+
 // ============================================================================
 // Type Exports
 // ============================================================================

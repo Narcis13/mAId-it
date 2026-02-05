@@ -46,6 +46,12 @@ import './file/index.ts';
 // Side-effect import: auto-registers AI runtime
 import './ai/index.ts';
 
+// Side-effect import: auto-registers Transform runtimes
+import './transform/index.ts';
+
+// Side-effect import: auto-registers Control runtimes
+import './control/index.ts';
+
 // Re-export HTTP runtimes for convenience
 export { httpSourceRuntime, httpSinkRuntime } from './http/index.ts';
 
@@ -58,3 +64,37 @@ export { aiRuntime } from './ai/index.ts';
 // Re-export AI types and utilities
 export type { AINodeConfig, AIResult, AIUsage, AIErrorCode } from './ai/index.ts';
 export { AIError, SchemaValidationError, isRateLimitError, parseSchemaDSL, SchemaDSLError } from './ai/index.ts';
+
+// Re-export Transform runtimes for convenience
+export { templateRuntime, mapRuntime, filterRuntime } from './transform/index.ts';
+
+// Re-export Transform types
+export type { TemplateConfig, MapConfig, FilterConfig } from './transform/index.ts';
+
+// Re-export Control runtimes for convenience
+export {
+  branchRuntime,
+  ifRuntime,
+  loopRuntime,
+  whileRuntime,
+  foreachRuntime,
+  breakRuntime,
+  gotoRuntime,
+} from './control/index.ts';
+
+// Re-export Control types and signals
+export type {
+  LoopConfig,
+  WhileConfig,
+  ForeachConfig,
+  BranchConfig,
+  IfConfig,
+  BreakConfig,
+  GotoConfig,
+  BranchResult,
+  IfResult,
+  LoopResult,
+  WhileResult,
+  ForeachResult,
+} from './control/index.ts';
+export { BreakSignal, GotoSignal, DEFAULT_MAX_ITERATIONS } from './control/index.ts';

@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2025-02-02)
 ## Current Position
 
 Phase: 5 of 8 (Transform & Control Flow)
-Plan: 1 of 4 in current phase
+Plan: 2 of 4 in current phase
 Status: In progress
-Last activity: 2026-02-05 - Completed 05-01-PLAN.md
+Last activity: 2026-02-05 - Completed 05-02-PLAN.md
 
-Progress: [████████████████░░░░] 53%
+Progress: [█████████████████░░░] 57%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 16
-- Average duration: 3.4 min
-- Total execution time: 0.95 hours
+- Total plans completed: 17
+- Average duration: 3.3 min
+- Total execution time: 0.98 hours
 
 **By Phase:**
 
@@ -31,10 +31,10 @@ Progress: [████████████████░░░░] 53%
 | 02-expression-execution-core | 3 | 10 min | 3.3 min |
 | 03-source-sink-runtimes | 3 | 7 min | 2.3 min |
 | 04-ai-integration | 4 | 8 min | 2 min |
-| 05-transform-control-flow | 1 | 2 min | 2 min |
+| 05-transform-control-flow | 2 | 4 min | 2 min |
 
 **Recent Trend:**
-- Last 5 plans: 03-03 (2 min), 04-01 (2 min), 04-02 (2 min), 04-04 (2 min), 05-01 (2 min)
+- Last 5 plans: 04-01 (2 min), 04-02 (2 min), 04-04 (2 min), 05-01 (2 min), 05-02 (2 min)
 - Trend: Stable/Improving
 
 *Updated after each plan completion*
@@ -103,6 +103,9 @@ Recent decisions affecting current work:
 - [05-01]: GotoSignal has required targetNodeId for executor handling
 - [05-01]: DEFAULT_MAX_ITERATIONS = 1000 as safety bound for all loops
 - [05-01]: Transform configs use $item, $index, $first, $last, $items iteration variables
+- [05-02]: Input added to nodeContext for template access (consistent with AI runtime)
+- [05-02]: Array coercion wraps single values for defensive map/filter handling
+- [05-02]: Filter returns original items not booleans (standard filter semantics)
 
 ### Pending Todos
 
@@ -115,7 +118,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-05
-Stopped at: Completed 05-01-PLAN.md
+Stopped at: Completed 05-02-PLAN.md
 Resume file: None
 
 ## Phase Commits

@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Source/Sink Runtimes** - HTTP and File runtimes proving the pattern
 - [x] **Phase 4: AI Integration** - OpenRouter AI runtime with schema validation
 - [x] **Phase 5: Transform & Control Flow** - Transform nodes and control flow constructs
-- [ ] **Phase 6: Scheduling & Parallelism** - DAG scheduler and wave-based parallel execution
+- [x] **Phase 6: Scheduling & Parallelism** - DAG scheduler and wave-based parallel execution
 - [ ] **Phase 7: Production Readiness** - Error handling, state persistence, checkpoints, logging
 - [ ] **Phase 8: Full CLI** - Complete CLI with all options and polish
 
@@ -133,10 +133,10 @@ Plans:
 **Plans**: 4 plans (4 waves)
 
 Plans:
-- [ ] 06-01-PLAN.md — Scheduler types, Semaphore, DAG building, and wave computation
-- [ ] 06-02-PLAN.md — Executor with wave processing and concurrency control
-- [ ] 06-03-PLAN.md — Parallel runtime and executor integration
-- [ ] 06-04-PLAN.md — Foreach parallel iteration and integration tests
+- [x] 06-01-PLAN.md — Scheduler types, Semaphore, DAG building, and wave computation
+- [x] 06-02-PLAN.md — Executor with wave processing and concurrency control
+- [x] 06-03-PLAN.md — Parallel runtime and executor integration
+- [x] 06-04-PLAN.md — Foreach parallel iteration and integration tests
 
 ### Phase 7: Production Readiness
 **Goal**: Users can rely on workflows recovering from failures and resuming from checkpoints
@@ -184,7 +184,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | 3. Source/Sink Runtimes | 3/3 | Complete | 2026-02-02 |
 | 4. AI Integration | 4/4 | Complete | 2026-02-05 |
 | 5. Transform & Control Flow | 4/4 | Complete | 2026-02-05 |
-| 6. Scheduling & Parallelism | 0/4 | Not started | - |
+| 6. Scheduling & Parallelism | 4/4 | Complete | 2026-02-05 |
 | 7. Production Readiness | 0/3 | Not started | - |
 | 8. Full CLI | 0/1 | Not started | - |
 

@@ -77,11 +77,11 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Parallel Execution
 
-- [ ] **PARA-01**: Scheduler builds DAG from node dependencies
-- [ ] **PARA-02**: Scheduler calculates execution waves (nodes that can run in parallel)
-- [ ] **PARA-03**: Executor runs wave nodes concurrently up to concurrency limit
-- [ ] **PARA-04**: Parallel block runs child branches simultaneously
-- [ ] **PARA-05**: Foreach supports max-concurrency attribute
+- [x] **PARA-01**: Scheduler builds DAG from node dependencies
+- [x] **PARA-02**: Scheduler calculates execution waves (nodes that can run in parallel)
+- [x] **PARA-03**: Executor runs wave nodes concurrently up to concurrency limit
+- [x] **PARA-04**: Parallel block runs child branches simultaneously
+- [x] **PARA-05**: Foreach supports max-concurrency attribute
 
 ### Error Handling
 
@@ -215,11 +215,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CTRL-05 | Phase 5 | Complete |
 | CTRL-06 | Phase 5 | Complete |
 | CTRL-07 | Phase 5 | Complete |
-| PARA-01 | Phase 6 | Pending |
-| PARA-02 | Phase 6 | Pending |
-| PARA-03 | Phase 6 | Pending |
-| PARA-04 | Phase 6 | Pending |
-| PARA-05 | Phase 6 | Pending |
+| PARA-01 | Phase 6 | Complete |
+| PARA-02 | Phase 6 | Complete |
+| PARA-03 | Phase 6 | Complete |
+| PARA-04 | Phase 6 | Complete |
+| PARA-05 | Phase 6 | Complete |
 | ERR-01 | Phase 7 | Pending |
 | ERR-02 | Phase 7 | Pending |
 | ERR-03 | Phase 7 | Pending |

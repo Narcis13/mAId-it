@@ -15,6 +15,7 @@ import { cloneStateForNode } from './state';
 import { evaluateTemplateInContext } from './index';
 import { executeWithRetry } from './retry';
 import { saveState } from './persistence';
+import { appendExecutionLog } from './logging';
 
 // ============================================================================
 // Helper Functions
@@ -73,7 +74,7 @@ export async function execute(
   options: ExecutionOptions = {}
 ): Promise<void> {
   const maxConcurrency = options.maxConcurrency ?? DEFAULT_MAX_CONCURRENCY;
-  const { persistencePath, errorHandler, defaultRetryConfig } = options;
+  const { persistencePath, errorHandler, defaultRetryConfig, logPath } = options;
 
   state.status = 'running';
 
@@ -116,6 +117,17 @@ export async function execute(
     }
 
     throw error;
+  } finally {
+    // Append execution log if logPath provided
+    // Logs regardless of success/failure - both are valuable audit info
+    if (logPath) {
+      try {
+        await appendExecutionLog(logPath, state);
+      } catch (logError) {
+        // Log but don't mask execution result
+        console.error('Failed to append execution log:', logError);
+      }
+    }
   }
 }
 

@@ -48,6 +48,8 @@ export interface ExecutionOptions {
   errorHandler?: (error: Error, state: ExecutionState) => void | Promise<void>;
   /** Default retry config applied to all nodes (can be overridden per-node) */
   defaultRetryConfig?: RetryConfig;
+  /** Path to workflow file for appending execution log */
+  logPath?: string;
 }
 
 /** Default maximum concurrency per wave */

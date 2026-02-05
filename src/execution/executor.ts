@@ -85,6 +85,11 @@ async function executeWave(
       // Note: nodes map passed for control flow handlers (parallel/foreach)
       const result = await executeNode(node, nodes, state, maxConcurrency);
       recordNodeResult(state, nodeId, result);
+
+      // Check if the node execution failed
+      if (result.status === 'failed') {
+        throw result.error ?? new Error(`Node ${nodeId} failed`);
+      }
     } catch (error) {
       errors.push(error as Error);
     } finally {
@@ -139,11 +144,12 @@ export async function executeNode(
     // Get runtime and execute
     const runtime = getRuntime(runtimeType);
 
-    // Resolve config values (templates, expressions)
-    const resolvedConfig = resolveNodeConfig(node.config ?? {}, state);
-
     // Clone state for isolation during parallel execution
+    // NOTE: Must clone BEFORE resolving config so 'input' is available in templates
     const nodeState = cloneStateForNode(state, { input });
+
+    // Resolve config values (templates, expressions) with the node state
+    const resolvedConfig = resolveNodeConfig(node.config ?? {}, nodeState);
 
     // Execute the runtime
     let output = await runtime!.execute({

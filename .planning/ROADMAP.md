@@ -112,12 +112,13 @@ Plans:
   7. Foreach node iterates over collection items
   8. Break statement exits current loop early
   9. Goto statement jumps to named node
-**Plans**: TBD
+**Plans**: 4 plans (3 waves)
 
 Plans:
-- [ ] 05-01: TBD
-- [ ] 05-02: TBD
-- [ ] 05-03: TBD
+- [ ] 05-01-PLAN.md — Control flow signals and type definitions (BreakSignal, GotoSignal, configs)
+- [ ] 05-02-PLAN.md — Transform runtimes (template, map, filter)
+- [ ] 05-03-PLAN.md — Control flow runtimes (branch, if, loop, while, foreach, break, goto)
+- [ ] 05-04-PLAN.md — Registry integration and tests
 
 ### Phase 6: Scheduling & Parallelism
 **Goal**: Users can run independent nodes in parallel for faster execution
@@ -180,7 +181,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | 2. Expression & Execution Core | 3/3 | Complete | 2026-02-02 |
 | 3. Source/Sink Runtimes | 3/3 | Complete | 2026-02-02 |
 | 4. AI Integration | 4/4 | Complete | 2026-02-05 |
-| 5. Transform & Control Flow | 0/3 | Not started | - |
+| 5. Transform & Control Flow | 0/4 | Not started | - |
 | 6. Scheduling & Parallelism | 0/2 | Not started | - |
 | 7. Production Readiness | 0/3 | Not started | - |
 | 8. Full CLI | 0/1 | Not started | - |

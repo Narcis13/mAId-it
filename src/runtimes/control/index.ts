@@ -7,6 +7,7 @@
  * - Loop: Fixed iteration with optional break condition
  * - While: Condition-based iteration with safety bounds
  * - Foreach: Collection iteration with item/index injection
+ * - Parallel: Concurrent branch execution with state isolation
  * - Break: Exit enclosing loop (with optional target)
  * - Goto: Jump to specific node (executor handles navigation)
  *
@@ -22,6 +23,7 @@ import { whileRuntime } from './while.ts';
 import { foreachRuntime } from './foreach.ts';
 import { breakRuntime } from './break.ts';
 import { gotoRuntime } from './goto.ts';
+import { parallelRuntime } from './parallel.ts';
 import { runtimeRegistry } from '../registry.ts';
 
 // ============================================================================
@@ -36,6 +38,7 @@ runtimeRegistry.register(whileRuntime);
 runtimeRegistry.register(foreachRuntime);
 runtimeRegistry.register(breakRuntime);
 runtimeRegistry.register(gotoRuntime);
+runtimeRegistry.register(parallelRuntime);
 
 // ============================================================================
 // Type Exports
@@ -49,6 +52,7 @@ export type {
   IfConfig,
   BreakConfig,
   GotoConfig,
+  ParallelConfig,
 } from './types.ts';
 
 export { DEFAULT_MAX_ITERATIONS } from './types.ts';
@@ -70,3 +74,4 @@ export { whileRuntime, type WhileResult } from './while.ts';
 export { foreachRuntime, type ForeachResult } from './foreach.ts';
 export { breakRuntime } from './break.ts';
 export { gotoRuntime } from './goto.ts';
+export { parallelRuntime, type ParallelResult } from './parallel.ts';

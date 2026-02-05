@@ -7,6 +7,7 @@
 import type { NodeAST } from '../types/ast';
 import type { ExecutionState, NodeResult } from './types';
 import type { ExecutionPlan, ExecutionWave, ExecutionOptions } from '../scheduler/types';
+import type { ParallelResult } from '../runtimes/control/parallel';
 import { Semaphore, DEFAULT_MAX_CONCURRENCY } from '../scheduler';
 import { getRuntime, hasRuntime } from '../runtimes/registry';
 import { cloneStateForNode } from './state';
@@ -151,8 +152,18 @@ export async function executeNode(
       state: nodeState,
     });
 
-    // NOTE: Plans 06-03 and 06-04 will add detection of ParallelResult
-    // and ForeachResult here, calling handlers that use the nodes map.
+    // Check if this is a parallel result that needs branch execution
+    if (isParallelResult(output)) {
+      const branchOutputs = await handleParallelResult(
+        output,
+        nodes,
+        state,
+        maxConcurrency
+      );
+      output = branchOutputs;
+    }
+
+    // NOTE: Plan 06-04 will add detection of ForeachResult here.
 
     const completedAt = Date.now();
 
@@ -239,4 +250,111 @@ function recordNodeResult(
   if (result.status === 'success' && result.output !== undefined) {
     state.nodeContext[nodeId] = { output: result.output };
   }
+}
+
+// ============================================================================
+// Parallel Execution Handling
+// ============================================================================
+
+/**
+ * Check if a node result output is a ParallelResult.
+ */
+function isParallelResult(output: unknown): output is ParallelResult {
+  return (
+    typeof output === 'object' &&
+    output !== null &&
+    'branches' in output &&
+    Array.isArray((output as ParallelResult).branches) &&
+    'branchCount' in output
+  );
+}
+
+/**
+ * Execute parallel branches concurrently.
+ *
+ * Each branch gets an isolated state clone.
+ * Results from all branches are collected.
+ *
+ * Note: Branch nodes are executed via executeNode, which has access to the
+ * nodes map for nested control flow. Branch nodes are regular nodes, not
+ * control flow nodes themselves (unless explicitly nested), so there's no
+ * recursion risk.
+ */
+async function handleParallelResult(
+  result: ParallelResult,
+  nodes: Map<string, NodeAST>,
+  state: ExecutionState,
+  maxConcurrency: number
+): Promise<unknown[]> {
+  const { branches, maxConcurrency: branchLimit } = result;
+
+  // Use branch-specific limit if provided, otherwise global limit
+  const concurrency = branchLimit ?? maxConcurrency;
+  const semaphore = new Semaphore(concurrency);
+  const branchResults: unknown[] = new Array(branches.length);
+  const errors: Error[] = [];
+
+  const branchExecutions = branches.map(async (branchNodes, branchIndex) => {
+    await semaphore.acquire();
+    try {
+      // Deep clone state for branch isolation
+      const branchState = cloneStateForBranch(state, branchIndex);
+
+      // Execute all nodes in this branch sequentially
+      let lastOutput: unknown = undefined;
+      for (const node of branchNodes) {
+        // Execute node with nodes map for potential nested control flow
+        const nodeResult = await executeNode(node, nodes, branchState, maxConcurrency);
+        recordNodeResult(branchState, node.id, nodeResult);
+
+        if (nodeResult.status === 'failed') {
+          throw nodeResult.error ?? new Error(`Node ${node.id} failed`);
+        }
+
+        lastOutput = nodeResult.output;
+
+        // Copy results back to main state
+        state.nodeResults.set(node.id, nodeResult);
+        if (nodeResult.output !== undefined) {
+          state.nodeContext[node.id] = { output: nodeResult.output };
+        }
+      }
+
+      branchResults[branchIndex] = lastOutput;
+    } catch (error) {
+      errors.push(error as Error);
+    } finally {
+      semaphore.release();
+    }
+  });
+
+  await Promise.all(branchExecutions);
+
+  // Fail-fast: surface first error
+  if (errors.length > 0) {
+    throw errors[0];
+  }
+
+  return branchResults;
+}
+
+/**
+ * Clone state for parallel branch execution.
+ */
+function cloneStateForBranch(
+  state: ExecutionState,
+  branchIndex: number
+): ExecutionState {
+  return {
+    ...state,
+    nodeContext: {
+      ...structuredClone(state.nodeContext),
+      $branch: branchIndex,
+    },
+    phaseContext: { ...state.phaseContext },
+    globalContext: { ...state.globalContext },
+    nodeResults: state.nodeResults, // Shared - writes isolated by nodeId
+    config: state.config,
+    secrets: state.secrets,
+  };
 }

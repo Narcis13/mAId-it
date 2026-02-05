@@ -37,6 +37,19 @@ export {
 // Re-export executor
 export { execute } from './executor';
 
+// Re-export retry utilities
+export { executeWithRetry, isRetryableError } from './retry';
+
+// Re-export state persistence
+export { saveState, loadState, getStatePath } from './persistence';
+
+// Re-export workflow resume
+export { resumeWorkflow, canResume } from './resume';
+
+// Re-export execution logging
+export { formatExecutionLog, appendExecutionLog } from './logging';
+export type { ExecutionLogEntry } from './logging';
+
 // ============================================================================
 // Context-aware Expression Evaluation
 // ============================================================================

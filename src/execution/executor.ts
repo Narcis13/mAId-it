@@ -47,15 +47,24 @@ function getNodeRetryConfig(
  * Processes waves sequentially, running nodes within each wave
  * concurrently up to the configured maxConcurrency limit.
  *
+ * Production features:
+ * - State persistence after each wave when persistencePath provided
+ * - Workflow-level error handler for unhandled failures
+ * - Default retry config for all nodes
+ *
  * @param plan Execution plan from buildExecutionPlan
  * @param state Initialized execution state
- * @param options Execution options (maxConcurrency, timeout)
+ * @param options Execution options (maxConcurrency, timeout, persistence, error handler)
  *
  * @example
  * ```typescript
  * const plan = buildExecutionPlan(ast);
  * const state = createExecutionState({ workflowId: ast.metadata.name });
- * await execute(plan, state, { maxConcurrency: 5 });
+ * await execute(plan, state, {
+ *   maxConcurrency: 5,
+ *   persistencePath: '.maidit-state/my-workflow/run-1.json',
+ *   errorHandler: (error, state) => console.error('Workflow failed:', error),
+ * });
  * ```
  */
 export async function execute(
@@ -64,6 +73,7 @@ export async function execute(
   options: ExecutionOptions = {}
 ): Promise<void> {
   const maxConcurrency = options.maxConcurrency ?? DEFAULT_MAX_CONCURRENCY;
+  const { persistencePath, errorHandler, defaultRetryConfig } = options;
 
   state.status = 'running';
 
@@ -71,14 +81,40 @@ export async function execute(
     // Process waves sequentially
     for (const wave of plan.waves) {
       state.currentWave = wave.waveNumber;
-      await executeWave(wave, plan.nodes, state, maxConcurrency);
+      await executeWave(wave, plan.nodes, state, maxConcurrency, defaultRetryConfig);
+
+      // Persist state after each wave completes
+      if (persistencePath) {
+        await saveState(state, persistencePath);
+      }
     }
 
     state.status = 'completed';
     state.completedAt = Date.now();
+
+    // Persist final successful state
+    if (persistencePath) {
+      await saveState(state, persistencePath);
+    }
   } catch (error) {
     state.status = 'failed';
     state.completedAt = Date.now();
+
+    // Persist final failed state
+    if (persistencePath) {
+      await saveState(state, persistencePath);
+    }
+
+    // Invoke workflow-level error handler
+    if (errorHandler) {
+      try {
+        await errorHandler(error as Error, state);
+      } catch (handlerError) {
+        // Log but don't mask original error
+        console.error('Error handler failed:', handlerError);
+      }
+    }
+
     throw error;
   }
 }

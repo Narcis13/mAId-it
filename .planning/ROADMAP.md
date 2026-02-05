@@ -169,10 +169,11 @@ Plans:
   2. `flowscript run --dry-run` validates and shows execution plan without running
   3. `--config key=value` overrides frontmatter config values
   4. `--input '{"field": "value"}'` provides workflow input data
-**Plans**: TBD
+**Plans**: 2 plans (2 waves)
 
 Plans:
-- [ ] 08-01: TBD
+- [ ] 08-01-PLAN.md — Run command implementation with all options (dry-run, config, input)
+- [ ] 08-02-PLAN.md — Comprehensive tests for run command
 
 ## Progress
 
@@ -188,7 +189,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | 5. Transform & Control Flow | 4/4 | Complete | 2026-02-05 |
 | 6. Scheduling & Parallelism | 4/4 | Complete | 2026-02-05 |
 | 7. Production Readiness | 5/5 | Complete | 2026-02-05 |
-| 8. Full CLI | 0/1 | Not started | - |
+| 8. Full CLI | 0/2 | Not started | - |
 
 ---
 *Roadmap created: 2025-02-02*

@@ -10,17 +10,17 @@ See: .planning/PROJECT.md (updated 2025-02-02)
 ## Current Position
 
 Phase: 6 of 8 (Scheduling & Parallelism)
-Plan: 1 of 3 in current phase
+Plan: 2 of 4 in current phase
 Status: In progress
-Last activity: 2026-02-05 - Completed 06-01-PLAN.md
+Last activity: 2026-02-05 - Completed 06-02-PLAN.md
 
-Progress: [███████████████████░] 69%
+Progress: [████████████████████░] 72%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 20
-- Average duration: 3.0 min
+- Total plans completed: 21
+- Average duration: 2.9 min
 - Total execution time: 1.1 hours
 
 **By Phase:**
@@ -32,10 +32,10 @@ Progress: [███████████████████░] 69%
 | 03-source-sink-runtimes | 3 | 7 min | 2.3 min |
 | 04-ai-integration | 4 | 8 min | 2 min |
 | 05-transform-control-flow | 4 | 10 min | 2.5 min |
-| 06-scheduling-parallelism | 1 | 2 min | 2 min |
+| 06-scheduling-parallelism | 2 | 4 min | 2 min |
 
 **Recent Trend:**
-- Last 5 plans: 05-01 (2 min), 05-02 (2 min), 05-03 (2 min), 05-04 (4 min), 06-01 (2 min)
+- Last 5 plans: 05-02 (2 min), 05-03 (2 min), 05-04 (4 min), 06-01 (2 min), 06-02 (2 min)
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -117,6 +117,11 @@ Recent decisions affecting current work:
 - [06-01]: Wave 0 contains nodes with no dependencies; subsequent waves depend only on completed waves
 - [06-01]: DEFAULT_MAX_CONCURRENCY = 10 for wave execution
 - [06-01]: Control flow nodes handle body execution internally; only top-level nodes participate in wave scheduling
+- [06-02]: executeNode accepts nodes Map parameter for control flow handlers (06-03/04)
+- [06-02]: State cloning uses structuredClone for deep nodeContext copy
+- [06-02]: nodeResults shared across cloned states (nodeId provides isolation)
+- [06-02]: Fail-fast error handling: first error stops wave and throws
+- [06-02]: Node output exposed in nodeContext for expression access
 
 ### Pending Todos
 
@@ -129,7 +134,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-05
-Stopped at: Completed 06-01-PLAN.md
+Stopped at: Completed 06-02-PLAN.md
 Resume file: None
 
 ## Phase Commits

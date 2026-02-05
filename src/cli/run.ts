@@ -13,6 +13,7 @@ import { buildExecutionPlan } from '../scheduler';
 import type { ExecutionPlan, ExecutionWave } from '../scheduler/types';
 import { createExecutionState, execute } from '../execution';
 import type { ExecutionState } from '../execution/types';
+import type { NodeAST, SourceNode, SinkNode, TransformNode } from '../types/ast';
 import {
   formatValidationResult,
   formatParseErrors,
@@ -151,11 +152,22 @@ export async function runWorkflow(
     ...configOverrides,
   };
 
+  // Build secrets from environment variables
+  // metadata.secrets is an array of secret names to look up from env
+  const secretNames = parseResult.data.metadata.secrets || [];
+  const secrets: Record<string, string> = {};
+  for (const name of secretNames) {
+    const envValue = process.env[name];
+    if (envValue !== undefined) {
+      secrets[name] = envValue;
+    }
+  }
+
   // Create execution state
   const state = createExecutionState({
     workflowId: parseResult.data.metadata.name,
     config: mergedConfig,
-    secrets: parseResult.data.metadata.secrets || {},
+    secrets,
     globalContext: inputData !== undefined ? { input: inputData } : {},
   });
 
@@ -320,14 +332,14 @@ function formatWave(
 /**
  * Get display string for node type.
  */
-function getNodeTypeDisplay(node: { type: string; [key: string]: unknown }): string {
+function getNodeTypeDisplay(node: NodeAST): string {
   switch (node.type) {
     case 'source':
-      return `source:${(node as { sourceType: string }).sourceType}`;
+      return `source:${(node as SourceNode).sourceType}`;
     case 'sink':
-      return `sink:${(node as { sinkType: string }).sinkType}`;
+      return `sink:${(node as SinkNode).sinkType}`;
     case 'transform':
-      return `transform:${(node as { transformType: string }).transformType}`;
+      return `transform:${(node as TransformNode).transformType}`;
     default:
       return node.type;
   }

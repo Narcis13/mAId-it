@@ -3,11 +3,12 @@
  * FlowScript CLI
  *
  * Command-line interface for the FlowScript workflow engine.
- * Provides commands for validating, parsing, and (future) executing workflows.
+ * Provides commands for validating, parsing, and executing workflows.
  */
 
 import { Command } from 'commander';
 import { validateFile, validateFiles } from './validate';
+import { runWorkflow } from './run';
 
 // Read package version
 const packageJson = await Bun.file(new URL('../../package.json', import.meta.url)).json();
@@ -45,6 +46,39 @@ program
 
     // Exit with appropriate code
     process.exit(result.valid ? 0 : 1);
+  });
+
+// Run command
+function collectConfig(value: string, previous: string[]): string[] {
+  return previous.concat([value]);
+}
+
+program
+  .command('run')
+  .description('Execute a .flow.md workflow')
+  .argument('<file>', 'Workflow file to run')
+  .option('--dry-run', 'Show execution plan without running')
+  .option('-c, --config <key=value>', 'Override config value (repeatable)', collectConfig, [])
+  .option('--input <json>', 'Workflow input data as JSON')
+  .option('-f, --format <format>', 'Output format (text, json)', 'text')
+  .option('--no-color', 'Disable colored output')
+  .action(async (file: string, options: {
+    dryRun?: boolean;
+    config: string[];
+    input?: string;
+    format?: string;
+    color?: boolean;
+  }) => {
+    const result = await runWorkflow(file, {
+      dryRun: options.dryRun,
+      config: options.config,
+      input: options.input,
+      format: options.format === 'json' ? 'json' : 'text',
+      noColor: options.color === false,
+    });
+
+    console.log(result.output);
+    process.exit(result.success ? 0 : 1);
   });
 
 // Parse command (useful for debugging/tooling)

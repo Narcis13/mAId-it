@@ -131,6 +131,11 @@ Recent decisions affecting current work:
 - [06-04]: Check nodeResult.status after execution and throw on failure for fail-fast
 - [06-04]: Sequential foreach: break stops all iterations; parallel: break only stops own
 - [06-04]: ForeachResult.bodyNodeIds are string IDs; executor looks up NodeAST from nodes map
+- [07-01]: AbortSignal.timeout for per-attempt timeout (native API, no external dependencies)
+- [07-01]: Map serialized as array of [nodeId, NodeResult] tuples for JSON persistence
+- [07-01]: AbortError NOT retryable (user cancellation); TimeoutError IS retryable (transient)
+- [07-01]: State path pattern: .maidit-state/{workflowId}/{runId}.json
+- [07-01]: loadState supports config/secrets overrides for recovery scenarios
 - [07-02]: Non-TTY environments use default action immediately without prompting
 - [07-02]: Maximum 3 invalid input attempts before using default action
 - [07-02]: SIGINT (Ctrl+C) during checkpoint prompt returns reject action

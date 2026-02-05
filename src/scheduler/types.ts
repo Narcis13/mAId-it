@@ -5,6 +5,7 @@
  */
 
 import type { NodeAST } from '../types/ast';
+import type { RetryConfig, ExecutionState } from '../execution/types';
 
 /**
  * A wave of nodes that can execute in parallel.
@@ -38,6 +39,15 @@ export interface ExecutionOptions {
   maxConcurrency?: number;
   /** Global timeout in milliseconds (default: none) */
   timeout?: number;
+
+  // Production readiness additions:
+
+  /** Path to persist state after each wave (enables checkpointing) */
+  persistencePath?: string;
+  /** Workflow-level error handler for unhandled failures */
+  errorHandler?: (error: Error, state: ExecutionState) => void | Promise<void>;
+  /** Default retry config applied to all nodes (can be overridden per-node) */
+  defaultRetryConfig?: RetryConfig;
 }
 
 /** Default maximum concurrency per wave */

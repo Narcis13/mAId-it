@@ -8,6 +8,7 @@ import type { NodeAST } from '../types/ast';
 import type { ExecutionState, NodeResult } from './types';
 import type { ExecutionPlan, ExecutionWave, ExecutionOptions } from '../scheduler/types';
 import type { ParallelResult } from '../runtimes/control/parallel';
+import type { ForeachResult } from '../runtimes/control/foreach';
 import { Semaphore, DEFAULT_MAX_CONCURRENCY } from '../scheduler';
 import { getRuntime, hasRuntime } from '../runtimes/registry';
 import { cloneStateForNode } from './state';
@@ -163,7 +164,16 @@ export async function executeNode(
       output = branchOutputs;
     }
 
-    // NOTE: Plan 06-04 will add detection of ForeachResult here.
+    // Check if this is a foreach result that needs iteration execution
+    if (isForeachResult(output)) {
+      const foreachOutputs = await handleForeachResult(
+        output,
+        nodes,
+        state,
+        maxConcurrency
+      );
+      output = foreachOutputs;
+    }
 
     const completedAt = Date.now();
 
@@ -357,4 +367,171 @@ function cloneStateForBranch(
     config: state.config,
     secrets: state.secrets,
   };
+}
+
+// ============================================================================
+// Foreach Execution Handling
+// ============================================================================
+
+/**
+ * Check if a node result output is a ForeachResult.
+ */
+function isForeachResult(output: unknown): output is ForeachResult {
+  return (
+    typeof output === 'object' &&
+    output !== null &&
+    'collection' in output &&
+    Array.isArray((output as ForeachResult).collection) &&
+    'itemVar' in output &&
+    'bodyNodeIds' in output
+  );
+}
+
+/**
+ * Execute foreach iterations, potentially in parallel.
+ *
+ * When maxConcurrency is 1 (default), executes sequentially.
+ * When maxConcurrency > 1, executes iterations in parallel up to the limit.
+ *
+ * Results maintain index order regardless of completion order.
+ *
+ * Note: Break in parallel mode only stops its own iteration,
+ * not other parallel iterations. Use maxConcurrency: 1 for break-all.
+ *
+ * Implementation note: ForeachResult.bodyNodeIds contains string IDs.
+ * We look up the actual NodeAST from the nodes map. Body nodes are
+ * regular nodes (not control flow) so they won't return ForeachResult,
+ * avoiding recursion concerns.
+ */
+async function handleForeachResult(
+  result: ForeachResult,
+  nodes: Map<string, NodeAST>,
+  state: ExecutionState,
+  maxConcurrency: number
+): Promise<unknown[]> {
+  const { collection, itemVar, indexVar, maxConcurrency: iterLimit, bodyNodeIds } = result;
+
+  // Look up body nodes from IDs
+  const bodyNodes: NodeAST[] = [];
+  for (const id of bodyNodeIds) {
+    const node = nodes.get(id);
+    if (node) {
+      bodyNodes.push(node);
+    }
+  }
+
+  // Results array maintains index order
+  const results: unknown[] = new Array(collection.length);
+  const errors: Error[] = [];
+
+  if (iterLimit === 1) {
+    // Sequential execution (original behavior)
+    for (let i = 0; i < collection.length; i++) {
+      try {
+        const iterState = cloneStateForIteration(state, {
+          [itemVar]: collection[i],
+          [indexVar]: i,
+        });
+
+        let lastOutput: unknown = undefined;
+        for (const node of bodyNodes) {
+          const nodeResult = await executeNode(node, nodes, iterState, maxConcurrency);
+          recordNodeResult(iterState, node.id, nodeResult);
+
+          if (nodeResult.status === 'failed') {
+            throw nodeResult.error ?? new Error(`Node ${node.id} failed`);
+          }
+
+          lastOutput = nodeResult.output;
+        }
+
+        results[i] = lastOutput;
+      } catch (error) {
+        if (isBreakSignal(error)) {
+          // Break stops sequential iteration
+          break;
+        }
+        throw error;
+      }
+    }
+  } else {
+    // Parallel execution
+    const semaphore = new Semaphore(iterLimit);
+
+    const iterations = collection.map(async (item, index) => {
+      await semaphore.acquire();
+      try {
+        const iterState = cloneStateForIteration(state, {
+          [itemVar]: item,
+          [indexVar]: index,
+        });
+
+        let lastOutput: unknown = undefined;
+        for (const node of bodyNodes) {
+          const nodeResult = await executeNode(node, nodes, iterState, maxConcurrency);
+          recordNodeResult(iterState, node.id, nodeResult);
+
+          if (nodeResult.status === 'failed') {
+            throw nodeResult.error ?? new Error(`Node ${node.id} failed`);
+          }
+
+          lastOutput = nodeResult.output;
+        }
+
+        // Assign by index to maintain order
+        results[index] = lastOutput;
+      } catch (error) {
+        if (isBreakSignal(error)) {
+          // Break in parallel only stops this iteration
+          // Other iterations continue
+          return;
+        }
+        errors.push(error as Error);
+      } finally {
+        semaphore.release();
+      }
+    });
+
+    await Promise.all(iterations);
+
+    // Fail-fast: surface first error
+    if (errors.length > 0) {
+      throw errors[0];
+    }
+  }
+
+  return results;
+}
+
+/**
+ * Clone state for foreach iteration.
+ */
+function cloneStateForIteration(
+  state: ExecutionState,
+  iterationContext: Record<string, unknown>
+): ExecutionState {
+  return {
+    ...state,
+    nodeContext: {
+      ...structuredClone(state.nodeContext),
+      ...iterationContext,
+    },
+    phaseContext: { ...state.phaseContext },
+    globalContext: { ...state.globalContext },
+    nodeResults: state.nodeResults, // Shared
+    config: state.config,
+    secrets: state.secrets,
+  };
+}
+
+/**
+ * Check if error is a BreakSignal.
+ */
+function isBreakSignal(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'name' in error &&
+    (error as { name: string }).name === 'BreakSignal'
+  );
 }

@@ -34,6 +34,9 @@ export {
   markFailed,
 } from './state';
 
+// Re-export executor
+export { execute } from './executor';
+
 // ============================================================================
 // Context-aware Expression Evaluation
 // ============================================================================

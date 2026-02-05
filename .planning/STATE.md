@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2025-02-02)
 
 **Core value:** Execute living markdown files as powerful, type-safe workflow programs with AI woven into every layer
-**Current focus:** Phase 5 - Transform & Control Flow (Not started)
+**Current focus:** Phase 5 - Transform & Control Flow (In progress)
 
 ## Current Position
 
-Phase: 4 of 8 (AI Integration) - VERIFIED
-Plan: 4 of 4 in current phase
-Status: Phase 4 complete and verified
-Last activity: 2026-02-05 - Phase 4 verified and complete
+Phase: 5 of 8 (Transform & Control Flow)
+Plan: 1 of 4 in current phase
+Status: In progress
+Last activity: 2026-02-05 - Completed 05-01-PLAN.md
 
-Progress: [███████████████░░░░░] 50%
+Progress: [████████████████░░░░] 53%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 15
-- Average duration: 3.5 min
-- Total execution time: 0.9 hours
+- Total plans completed: 16
+- Average duration: 3.4 min
+- Total execution time: 0.95 hours
 
 **By Phase:**
 
@@ -31,9 +31,10 @@ Progress: [███████████████░░░░░] 50%
 | 02-expression-execution-core | 3 | 10 min | 3.3 min |
 | 03-source-sink-runtimes | 3 | 7 min | 2.3 min |
 | 04-ai-integration | 4 | 8 min | 2 min |
+| 05-transform-control-flow | 1 | 2 min | 2 min |
 
 **Recent Trend:**
-- Last 5 plans: 03-02 (2 min), 03-03 (2 min), 04-01 (2 min), 04-02 (2 min), 04-04 (2 min)
+- Last 5 plans: 03-03 (2 min), 04-01 (2 min), 04-02 (2 min), 04-04 (2 min), 05-01 (2 min)
 - Trend: Stable/Improving
 
 *Updated after each plan completion*
@@ -98,6 +99,10 @@ Recent decisions affecting current work:
 - [04-04]: Warnings not errors for type mismatches since AI output types resolve at runtime
 - [04-04]: Pass 4 placement for type validation (runs only if no prior errors)
 - [04-04]: Field access extraction via pattern {{nodeId.output.field}} extracts 'field' for schema check
+- [05-01]: BreakSignal has optional targetLoopId for breaking specific outer loops
+- [05-01]: GotoSignal has required targetNodeId for executor handling
+- [05-01]: DEFAULT_MAX_ITERATIONS = 1000 as safety bound for all loops
+- [05-01]: Transform configs use $item, $index, $first, $last, $items iteration variables
 
 ### Pending Todos
 
@@ -109,8 +114,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-04
-Stopped at: Completed 04-04-PLAN.md (Phase 04 complete)
+Last session: 2026-02-05
+Stopped at: Completed 05-01-PLAN.md
 Resume file: None
 
 ## Phase Commits
@@ -121,3 +126,4 @@ Resume file: None
 | 02-expression-execution-core | 5bbc844 | .planning/phases/02-expression-execution-core | 2026-02-02 |
 | 03-source-sink-runtimes | e15a010 | .planning/phases/03-source-sink-runtimes | 2026-02-02 |
 | 04-ai-integration | e623d91 | .planning/phases/04-ai-integration | 2026-02-04 |
+| 05-transform-control-flow | 3b51b0d | .planning/phases/05-transform-control-flow | 2026-02-05 |

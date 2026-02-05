@@ -63,3 +63,45 @@ export interface ExecutionStateOptions {
   secrets?: Record<string, string>;
   globalContext?: Record<string, unknown>;
 }
+
+// ============================================================================
+// Retry Configuration
+// ============================================================================
+
+/**
+ * Retry configuration for node execution.
+ */
+export interface RetryConfig {
+  /** Maximum retry attempts (default: 3) */
+  maxRetries?: number;
+  /** Base delay for exponential backoff in ms (default: 1000) */
+  backoffBase?: number;
+  /** Timeout in ms for each attempt (default: 30000) */
+  timeout?: number;
+  /** Node ID to execute if all retries fail */
+  fallbackNodeId?: string;
+}
+
+// ============================================================================
+// Persistence Types
+// ============================================================================
+
+/**
+ * Persisted state format for JSON serialization.
+ * Maps are converted to arrays for JSON compatibility.
+ */
+export interface PersistedState {
+  workflowId: string;
+  runId: string;
+  status: ExecutionState['status'];
+  currentWave: number;
+  startedAt: number;
+  completedAt?: number;
+  /** nodeResults Map serialized as array of [nodeId, result] tuples */
+  nodeResults: Array<[string, NodeResult]>;
+  globalContext: Record<string, unknown>;
+  phaseContext: Record<string, unknown>;
+  nodeContext: Record<string, unknown>;
+  config: Record<string, unknown>;
+  secrets: Record<string, string>;
+}

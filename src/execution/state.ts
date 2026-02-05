@@ -118,3 +118,42 @@ export function markFailed(state: ExecutionState): void {
   state.status = 'failed';
   state.completedAt = Date.now();
 }
+
+// ============================================================================
+// State Cloning (for parallel execution)
+// ============================================================================
+
+/**
+ * Clone execution state for parallel node execution.
+ *
+ * Creates a new state object with deep-cloned nodeContext to prevent
+ * parallel nodes from affecting each other's context.
+ *
+ * Note: nodeResults is shared intentionally - results are written by nodeId
+ * which provides natural isolation.
+ *
+ * @param state Original execution state
+ * @param contextOverrides Optional context values to add/override
+ * @returns Cloned state safe for parallel execution
+ */
+export function cloneStateForNode(
+  state: ExecutionState,
+  contextOverrides?: Record<string, unknown>
+): ExecutionState {
+  return {
+    ...state,
+    // Deep clone nodeContext to prevent parallel mutation issues
+    nodeContext: {
+      ...structuredClone(state.nodeContext),
+      ...contextOverrides,
+    },
+    // phaseContext and globalContext are read-only during execution
+    phaseContext: { ...state.phaseContext },
+    globalContext: { ...state.globalContext },
+    // nodeResults is shared - writes are isolated by nodeId key
+    nodeResults: state.nodeResults,
+    // config and secrets are read-only
+    config: state.config,
+    secrets: state.secrets,
+  };
+}

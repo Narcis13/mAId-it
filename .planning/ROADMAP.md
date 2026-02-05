@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Expression & Execution Core** - Expression evaluator and executor framework
 - [x] **Phase 3: Source/Sink Runtimes** - HTTP and File runtimes proving the pattern
 - [x] **Phase 4: AI Integration** - OpenRouter AI runtime with schema validation
-- [ ] **Phase 5: Transform & Control Flow** - Transform nodes and control flow constructs
+- [x] **Phase 5: Transform & Control Flow** - Transform nodes and control flow constructs
 - [ ] **Phase 6: Scheduling & Parallelism** - DAG scheduler and wave-based parallel execution
 - [ ] **Phase 7: Production Readiness** - Error handling, state persistence, checkpoints, logging
 - [ ] **Phase 8: Full CLI** - Complete CLI with all options and polish
@@ -115,10 +115,10 @@ Plans:
 **Plans**: 4 plans (3 waves)
 
 Plans:
-- [ ] 05-01-PLAN.md — Control flow signals and type definitions (BreakSignal, GotoSignal, configs)
-- [ ] 05-02-PLAN.md — Transform runtimes (template, map, filter)
-- [ ] 05-03-PLAN.md — Control flow runtimes (branch, if, loop, while, foreach, break, goto)
-- [ ] 05-04-PLAN.md — Registry integration and tests
+- [x] 05-01-PLAN.md — Control flow signals and type definitions (BreakSignal, GotoSignal, configs)
+- [x] 05-02-PLAN.md — Transform runtimes (template, map, filter)
+- [x] 05-03-PLAN.md — Control flow runtimes (branch, if, loop, while, foreach, break, goto)
+- [x] 05-04-PLAN.md — Registry integration and tests
 
 ### Phase 6: Scheduling & Parallelism
 **Goal**: Users can run independent nodes in parallel for faster execution
@@ -181,7 +181,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | 2. Expression & Execution Core | 3/3 | Complete | 2026-02-02 |
 | 3. Source/Sink Runtimes | 3/3 | Complete | 2026-02-02 |
 | 4. AI Integration | 4/4 | Complete | 2026-02-05 |
-| 5. Transform & Control Flow | 0/4 | Not started | - |
+| 5. Transform & Control Flow | 4/4 | Complete | 2026-02-05 |
 | 6. Scheduling & Parallelism | 0/2 | Not started | - |
 | 7. Production Readiness | 0/3 | Not started | - |
 | 8. Full CLI | 0/1 | Not started | - |

@@ -61,19 +61,19 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Transform Nodes
 
-- [ ] **TRANS-01**: Template node renders strings with Handlebars-like syntax
-- [ ] **TRANS-02**: Map node transforms each item in array using expression
-- [ ] **TRANS-03**: Filter node filters array items based on condition expression
+- [x] **TRANS-01**: Template node renders strings with Handlebars-like syntax
+- [x] **TRANS-02**: Map node transforms each item in array using expression
+- [x] **TRANS-03**: Filter node filters array items based on condition expression
 
 ### Control Flow
 
-- [ ] **CTRL-01**: Branch node routes based on pattern matching conditions
-- [ ] **CTRL-02**: If/else node provides simple conditional routing
-- [ ] **CTRL-03**: Loop node iterates with max count and break condition
-- [ ] **CTRL-04**: While node iterates while condition is true
-- [ ] **CTRL-05**: Foreach node iterates over collection items
-- [ ] **CTRL-06**: Break statement exits current loop early
-- [ ] **CTRL-07**: Goto statement jumps to named node
+- [x] **CTRL-01**: Branch node routes based on pattern matching conditions
+- [x] **CTRL-02**: If/else node provides simple conditional routing
+- [x] **CTRL-03**: Loop node iterates with max count and break condition
+- [x] **CTRL-04**: While node iterates while condition is true
+- [x] **CTRL-05**: Foreach node iterates over collection items
+- [x] **CTRL-06**: Break statement exits current loop early
+- [x] **CTRL-07**: Goto statement jumps to named node
 
 ### Parallel Execution
 
@@ -205,16 +205,16 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AI-05 | Phase 4 | Complete |
 | AI-06 | Phase 4 | Complete |
 | AI-07 | Phase 4 | Complete |
-| TRANS-01 | Phase 5 | Pending |
-| TRANS-02 | Phase 5 | Pending |
-| TRANS-03 | Phase 5 | Pending |
-| CTRL-01 | Phase 5 | Pending |
-| CTRL-02 | Phase 5 | Pending |
-| CTRL-03 | Phase 5 | Pending |
-| CTRL-04 | Phase 5 | Pending |
-| CTRL-05 | Phase 5 | Pending |
-| CTRL-06 | Phase 5 | Pending |
-| CTRL-07 | Phase 5 | Pending |
+| TRANS-01 | Phase 5 | Complete |
+| TRANS-02 | Phase 5 | Complete |
+| TRANS-03 | Phase 5 | Complete |
+| CTRL-01 | Phase 5 | Complete |
+| CTRL-02 | Phase 5 | Complete |
+| CTRL-03 | Phase 5 | Complete |
+| CTRL-04 | Phase 5 | Complete |
+| CTRL-05 | Phase 5 | Complete |
+| CTRL-06 | Phase 5 | Complete |
+| CTRL-07 | Phase 5 | Complete |
 | PARA-01 | Phase 6 | Pending |
 | PARA-02 | Phase 6 | Pending |
 | PARA-03 | Phase 6 | Pending |

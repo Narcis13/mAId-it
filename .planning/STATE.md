@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2025-02-02)
 
 **Core value:** Execute living markdown files as powerful, type-safe workflow programs with AI woven into every layer
-**Current focus:** Phase 6 - Scheduling & Parallelism (In progress)
+**Current focus:** Phase 6 - Scheduling & Parallelism (Complete)
 
 ## Current Position
 
 Phase: 6 of 8 (Scheduling & Parallelism)
-Plan: 3 of 4 in current phase
-Status: In progress
-Last activity: 2026-02-05 - Completed 06-03-PLAN.md
+Plan: 4 of 4 in current phase
+Status: Phase complete
+Last activity: 2026-02-05 - Completed 06-04-PLAN.md
 
-Progress: [█████████████████████░] 76%
+Progress: [███████████████████████] 79%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 22
+- Total plans completed: 23
 - Average duration: 2.9 min
-- Total execution time: 1.2 hours
+- Total execution time: 1.3 hours
 
 **By Phase:**
 
@@ -32,10 +32,10 @@ Progress: [█████████████████████░] 7
 | 03-source-sink-runtimes | 3 | 7 min | 2.3 min |
 | 04-ai-integration | 4 | 8 min | 2 min |
 | 05-transform-control-flow | 4 | 10 min | 2.5 min |
-| 06-scheduling-parallelism | 3 | 7 min | 2.3 min |
+| 06-scheduling-parallelism | 4 | 11 min | 2.75 min |
 
 **Recent Trend:**
-- Last 5 plans: 05-03 (2 min), 05-04 (4 min), 06-01 (2 min), 06-02 (2 min), 06-03 (3 min)
+- Last 5 plans: 05-04 (4 min), 06-01 (2 min), 06-02 (2 min), 06-03 (3 min), 06-04 (4 min)
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -126,6 +126,10 @@ Recent decisions affecting current work:
 - [06-03]: cloneStateForBranch injects $branch index into nodeContext for branch identification
 - [06-03]: Branch-specific maxConcurrency overrides global if provided
 - [06-03]: Fail-fast error handling: first branch error surfaced immediately
+- [06-04]: Clone state BEFORE resolving config so 'input' is available in templates
+- [06-04]: Check nodeResult.status after execution and throw on failure for fail-fast
+- [06-04]: Sequential foreach: break stops all iterations; parallel: break only stops own
+- [06-04]: ForeachResult.bodyNodeIds are string IDs; executor looks up NodeAST from nodes map
 
 ### Pending Todos
 
@@ -138,7 +142,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-05
-Stopped at: Completed 06-03-PLAN.md
+Stopped at: Completed 06-04-PLAN.md (Phase 6 complete)
 Resume file: None
 
 ## Phase Commits

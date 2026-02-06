@@ -109,3 +109,12 @@ bun --hot ./index.ts
 ```
 
 For more information, read the Bun API docs in `node_modules/bun-types/docs/**.mdx`.
+
+## Codebase Overview
+
+FlowScript (maidit) is a text-native workflow engine that executes `.flow.md` files — markdown documents with YAML frontmatter + XML body. Like n8n but Git-native and version-controllable.
+
+**Stack**: Bun, TypeScript (strict), fast-xml-parser, jsep, Luxon, Zod, Commander.js
+**Structure**: `src/parser/` → `src/validator/` → `src/scheduler/` → `src/execution/` → `src/runtimes/`
+
+For detailed architecture, see [docs/CODEBASE_MAP.md](docs/CODEBASE_MAP.md).

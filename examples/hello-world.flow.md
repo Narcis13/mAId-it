@@ -38,26 +38,32 @@ runtime:
   </source>
 
   <!-- Format the joke nicely -->
-  <transform id="format-joke" type="map" input="fetch-joke">
-    <expression>
-      joke => ({
-        setup: joke.setup,
-        punchline: joke.punchline,
-        formatted: joke.setup + " ... " + joke.punchline,
-        fetched_at: now()
-      })
-    </expression>
+  <transform id="format-joke" type="template" input="fetch-joke">
+    <template>{"setup": "{{input.setup}}", "punchline": "{{input.punchline}}", "formatted": "{{input.setup}} ... {{input.punchline}}", "fetched_at": "{{now()}}"}</template>
   </transform>
 
   <!-- Save to a file -->
   <sink id="save-joke" type="file" input="format-joke">
-    <path>{{config.output_dir}}/joke.json</path>
+    <path>{{$config.output_dir}}/joke.json</path>
     <format>json</format>
   </sink>
 </workflow>
 
-<!--
+---
+
 ## Execution Log
 
-_No executions yet._
--->
+**Run ID:** `62b8b17f-40fe-430a-b699-83036d676802`
+**Workflow:** hello-world
+**Timestamp:** 2026-02-07T13:47:17.573Z
+**Duration:** 0.35s
+**Status:** completed
+**Waves:** 3
+
+### Node Results
+
+| Node | Status | Duration | Output |
+|------|--------|----------|--------|
+| fetch-joke | success | 0.32s | {"type":"general","setup":"A grocery store cash... |
+| format-joke | success | 0.03s | "{\"setup\": \"A grocery store cashier asked if... |
+| save-joke | success | 0.00s | {"path":"./output/joke.json","bytes":337} |

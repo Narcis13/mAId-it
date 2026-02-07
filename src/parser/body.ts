@@ -355,6 +355,11 @@ function parseSourceNode(
   // Extract config from attributes (excluding id, type)
   const config = extractConfig(attrs, ['id', 'type', 'input']);
   const childConfig = extractChildElements(entry, tagName);
+  // Flatten <request> child element into config for HTTP sources
+  if (childConfig.request && typeof childConfig.request === 'object') {
+    Object.assign(config, childConfig.request);
+    delete childConfig.request;
+  }
   Object.assign(config, childConfig);
 
   const node: SourceNode = {

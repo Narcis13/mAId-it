@@ -13,6 +13,9 @@ import { buildExecutionPlan } from '../scheduler';
 import type { ExecutionPlan, ExecutionWave } from '../scheduler/types';
 import { createExecutionState, execute } from '../execution';
 import type { ExecutionState } from '../execution/types';
+
+// Side-effect import: auto-registers all runtimes before execution
+import '../runtimes';
 import type { NodeAST, SourceNode, SinkNode, TransformNode } from '../types/ast';
 import {
   formatValidationResult,
@@ -146,9 +149,18 @@ export async function runWorkflow(
     }
   }
 
-  // Merge workflow config with overrides
+  // Resolve config defaults from schema definitions
+  const configDefaults: Record<string, unknown> = {};
+  const configSchema = parseResult.data.metadata.config || {};
+  for (const [key, schema] of Object.entries(configSchema)) {
+    if (typeof schema === 'object' && schema !== null && 'default' in schema) {
+      configDefaults[key] = (schema as { default?: unknown }).default;
+    }
+  }
+
+  // Merge config defaults with overrides
   const mergedConfig = {
-    ...(parseResult.data.metadata.config || {}),
+    ...configDefaults,
     ...configOverrides,
   };
 
@@ -188,7 +200,7 @@ export async function runWorkflow(
 
     // Execute the workflow
     // Note: execute() processes waves sequentially internally
-    await execute(executionPlan, state);
+    await execute(executionPlan, state, { logPath: filePath });
 
     const duration = Date.now() - startTime;
 

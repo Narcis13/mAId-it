@@ -9,10 +9,11 @@ import type { ExecutionState, NodeResult, RetryConfig } from './types';
 import type { ExecutionPlan, ExecutionWave, ExecutionOptions } from '../scheduler/types';
 import type { ParallelResult } from '../runtimes/control/parallel';
 import type { ForeachResult } from '../runtimes/control/foreach';
+import type { LoopResult } from '../runtimes/control/loop';
 import { Semaphore, DEFAULT_MAX_CONCURRENCY } from '../scheduler';
 import { getRuntime, hasRuntime } from '../runtimes/registry';
 import { cloneStateForNode } from './state';
-import { evaluateTemplateInContext } from './index';
+import { evaluateInContext, evaluateTemplateInContext } from './index';
 import { executeWithRetry } from './retry';
 import { saveState } from './persistence';
 import { appendExecutionLog } from './logging';
@@ -301,6 +302,18 @@ export async function executeNode(
       output = foreachOutputs;
     }
 
+    // Check if this is a loop result that needs iterative execution
+    if (isLoopResult(output)) {
+      const loopOutput = await handleLoopResult(
+        output,
+        nodes,
+        state,
+        maxConcurrency,
+        defaultRetryConfig
+      );
+      output = loopOutput;
+    }
+
     const completedAt = Date.now();
 
     return {
@@ -368,9 +381,9 @@ async function executeFallbackNode(
 function getNodeRuntimeType(node: NodeAST): string {
   switch (node.type) {
     case 'source':
-      return `source:${node.sourceType}`;
+      return `${node.sourceType}:source`;
     case 'sink':
-      return `sink:${node.sinkType}`;
+      return `${node.sinkType}:sink`;
     case 'transform':
       return `transform:${node.transformType}`;
     case 'branch':
@@ -698,4 +711,79 @@ function isBreakSignal(error: unknown): boolean {
     'name' in error &&
     (error as { name: string }).name === 'BreakSignal'
   );
+}
+
+// ============================================================================
+// Loop Execution Handling
+// ============================================================================
+
+/**
+ * Check if a node result output is a LoopResult.
+ */
+function isLoopResult(output: unknown): output is LoopResult {
+  return (
+    typeof output === 'object' &&
+    output !== null &&
+    'maxIterations' in output &&
+    'bodyNodes' in output &&
+    Array.isArray((output as LoopResult).bodyNodes)
+  );
+}
+
+/**
+ * Execute loop iterations sequentially.
+ *
+ * Runs body nodes up to maxIterations times. After each iteration,
+ * evaluates the breakCondition against execution state. If it evaluates
+ * to truthy, the loop exits early.
+ *
+ * The last output from the final iteration's last body node is returned.
+ */
+async function handleLoopResult(
+  result: LoopResult,
+  nodes: Map<string, NodeAST>,
+  state: ExecutionState,
+  maxConcurrency: number,
+  defaultRetryConfig?: RetryConfig
+): Promise<unknown> {
+  const { maxIterations, breakCondition, bodyNodes } = result;
+
+  let lastOutput: unknown = undefined;
+
+  for (let i = 0; i < maxIterations; i++) {
+    // Add iteration index to state context
+    state.nodeContext.$iteration = i;
+
+    try {
+      for (const node of bodyNodes) {
+        const nodeResult = await executeNode(node, nodes, state, maxConcurrency, defaultRetryConfig);
+        recordNodeResult(state, node.id, nodeResult);
+
+        if (nodeResult.status === 'failed') {
+          throw nodeResult.error ?? new Error(`Node ${node.id} failed`);
+        }
+
+        lastOutput = nodeResult.output;
+      }
+    } catch (error) {
+      if (isBreakSignal(error)) {
+        break;
+      }
+      throw error;
+    }
+
+    // Evaluate break condition after each iteration
+    if (breakCondition) {
+      try {
+        const shouldBreak = evaluateInContext(breakCondition, state);
+        if (shouldBreak) {
+          break;
+        }
+      } catch {
+        // If break condition can't be evaluated, continue looping
+      }
+    }
+  }
+
+  return lastOutput;
 }

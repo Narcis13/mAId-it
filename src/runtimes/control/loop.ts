@@ -8,7 +8,7 @@
 import type { NodeRuntime, ExecutionParams } from '../types.ts';
 import type { LoopConfig } from './types.ts';
 import { DEFAULT_MAX_ITERATIONS } from './types.ts';
-import type { LoopNode } from '../../types/ast.ts';
+import type { LoopNode, NodeAST } from '../../types/ast.ts';
 
 // ============================================================================
 // Loop Result Types
@@ -24,6 +24,8 @@ export interface LoopResult {
   breakCondition?: string;
   /** Body node IDs to execute per iteration */
   bodyNodeIds: string[];
+  /** Body node ASTs for direct execution (nested nodes aren't in plan.nodes) */
+  bodyNodes: NodeAST[];
 }
 
 // ============================================================================
@@ -61,13 +63,14 @@ class LoopRuntime implements NodeRuntime<LoopConfig, unknown, LoopResult> {
     // Get breakCondition from AST node first, then config
     const breakCondition = loopNode.breakCondition ?? config.breakCondition;
 
-    // Extract body node IDs
+    // Extract body node IDs and AST nodes
     const bodyNodeIds = loopNode.body.map((n) => n.id);
 
     return {
       maxIterations,
       breakCondition,
       bodyNodeIds,
+      bodyNodes: loopNode.body,
     };
   }
 }

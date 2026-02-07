@@ -178,25 +178,30 @@ export async function appendExecutionLog(
   // Format the log entry
   const logEntry = formatExecutionLog(state);
 
-  // Check if log section already exists
+  // Check if log section already exists (may be inside HTML comment)
   const markerIndex = content.indexOf(LOG_SECTION_MARKER);
 
   let updated: string;
   if (markerIndex !== -1) {
-    // Find the separator before the log section (---\n\n## Execution Log)
-    // Look backwards from marker for "---"
-    const separatorPattern = /---\s*\n+$/;
+    // Find the start of the section, accounting for HTML comment wrapper
+    // Look backwards from marker for "<!--" or "---"
     const beforeMarker = content.substring(0, markerIndex);
+    const commentPattern = /<!--\s*\n*$/;
+    const separatorPattern = /---\s*\n+$/;
+    const commentMatch = beforeMarker.match(commentPattern);
     const separatorMatch = beforeMarker.match(separatorPattern);
 
-    if (separatorMatch) {
-      // Replace from separator to end
-      const cutPoint = markerIndex - separatorMatch[0].length;
-      updated = content.substring(0, cutPoint) + logEntry;
+    let cutPoint: number;
+    if (commentMatch) {
+      cutPoint = markerIndex - commentMatch[0].length;
+    } else if (separatorMatch) {
+      cutPoint = markerIndex - separatorMatch[0].length;
     } else {
-      // Replace from marker to end (no separator found)
-      updated = content.substring(0, markerIndex) + logEntry;
+      cutPoint = markerIndex;
     }
+
+    // Remove everything from cut point to end (including any closing -->)
+    updated = content.substring(0, cutPoint).trimEnd() + '\n\n' + logEntry;
   } else {
     // Append new log section
     // Ensure there's a newline before adding

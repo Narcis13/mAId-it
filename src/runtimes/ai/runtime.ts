@@ -44,6 +44,7 @@ interface OpenRouterToolFunction {
   name: string;
   description: string;
   parameters: Record<string, unknown>;
+  strict?: boolean;
 }
 
 interface OpenRouterTool {
@@ -93,50 +94,108 @@ function resolveTemplate(value: string, state: ExecutionState): string {
 }
 
 /**
+ * Attempt to remap output keys to match expected schema keys.
+ * Handles cases where the model uses synonyms (e.g. "rating" instead of "score").
+ *
+ * Strategy: for each missing expected key, find an unmatched output key with
+ * the same value type and assign it.
+ */
+function remapKeysToSchema(
+  output: Record<string, unknown>,
+  schema: z.ZodType
+): Record<string, unknown> | null {
+  // Get expected keys from the JSON schema representation
+  // (more reliable than Zod internals which vary across versions)
+  const jsonSchema = zodToJsonSchema(schema);
+  const props = jsonSchema.properties as Record<string, Record<string, string>> | undefined;
+  if (!props) return null;
+
+  const expectedKeys = Object.keys(props);
+  // Build a simple type map from the JSON schema
+  const expectedTypes: Record<string, string> = {};
+  for (const [key, val] of Object.entries(props)) {
+    expectedTypes[key] = val.type ?? 'object';
+  }
+  const outputKeys = Object.keys(output);
+
+  // Find matched and unmatched keys
+  const matched = new Set(expectedKeys.filter((k) => k in output));
+  const missingExpected = expectedKeys.filter((k) => !matched.has(k));
+  const extraOutput = outputKeys.filter((k) => !matched.has(k));
+
+  if (missingExpected.length === 0) return null; // Nothing to remap
+
+  const remapped = { ...output };
+
+  for (const expectedKey of missingExpected) {
+    // Get expected type from JSON schema
+    const expectedType = expectedTypes[expectedKey];
+
+    // Find a matching extra key by value type
+    const matchIdx = extraOutput.findIndex((k) => {
+      const val = output[k];
+      return typeof val === expectedType;
+    });
+
+    if (matchIdx !== -1) {
+      const extraKey = extraOutput.splice(matchIdx, 1)[0];
+      remapped[expectedKey] = output[extraKey];
+      delete remapped[extraKey];
+    }
+  }
+
+  return remapped;
+}
+
+
+/**
  * Convert Zod schema to JSON Schema for OpenRouter tool definition.
- * Uses Zod's built-in JSON schema generation.
+ *
+ * Supports two Zod internal API styles:
+ * - Standard: _def.typeName = 'ZodObject', _def.shape = function
+ * - Compact:  _def.type = 'object', _def.shape = plain object
  */
 function zodToJsonSchema(schema: z.ZodType): Record<string, unknown> {
-  // Zod provides a way to get a JSON Schema-like representation
-  // We'll build a simple JSON schema from the Zod schema's shape
-  const zodSchema = schema as unknown as {
-    _def: {
-      typeName: string;
-      shape?: () => Record<string, z.ZodType>;
-      type?: z.ZodType;
-    };
-  };
+  const def = (schema as unknown as { _def: Record<string, unknown> })._def;
+  if (!def) return {};
 
-  const typeName = zodSchema._def?.typeName;
+  // Resolve type identifier (supports both Zod API styles)
+  const kind = (def.typeName as string) ?? (def.type as string);
 
-  if (typeName === 'ZodString') {
+  if (kind === 'ZodString' || kind === 'string') {
     return { type: 'string' };
   }
 
-  if (typeName === 'ZodNumber') {
+  if (kind === 'ZodNumber' || kind === 'number') {
     return { type: 'number' };
   }
 
-  if (typeName === 'ZodBoolean') {
+  if (kind === 'ZodBoolean' || kind === 'boolean') {
     return { type: 'boolean' };
   }
 
-  if (typeName === 'ZodArray') {
-    const innerType = zodSchema._def?.type;
+  if (kind === 'ZodArray' || kind === 'array') {
+    // Standard Zod uses _def.type for inner schema; compact uses _def.element
+    const innerType = (def.element ?? def.type) as z.ZodType | undefined;
     return {
       type: 'array',
-      items: innerType ? zodToJsonSchema(innerType) : {},
+      items: innerType && typeof innerType === 'object' && '_def' in innerType
+        ? zodToJsonSchema(innerType)
+        : {},
     };
   }
 
-  if (typeName === 'ZodObject') {
-    const shape = zodSchema._def?.shape?.() ?? {};
+  if (kind === 'ZodObject' || kind === 'object') {
+    // Standard Zod: _def.shape() is a function; compact: _def.shape is a plain object
+    const rawShape = def.shape;
+    const shape: Record<string, z.ZodType> =
+      typeof rawShape === 'function' ? rawShape() : (rawShape as Record<string, z.ZodType>) ?? {};
+
     const properties: Record<string, unknown> = {};
     const required: string[] = [];
 
     for (const [key, value] of Object.entries(shape)) {
       properties[key] = zodToJsonSchema(value as z.ZodType);
-      // In our DSL, all fields are required by default
       required.push(key);
     }
 
@@ -148,7 +207,6 @@ function zodToJsonSchema(schema: z.ZodType): Record<string, unknown> {
     };
   }
 
-  // Fallback for unknown types
   return {};
 }
 
@@ -156,12 +214,21 @@ function zodToJsonSchema(schema: z.ZodType): Record<string, unknown> {
  * Build the tool definition for structured output.
  */
 function buildOutputTool(schema: z.ZodType): OpenRouterTool {
+  const jsonSchema = zodToJsonSchema(schema);
+  const props = jsonSchema.properties as Record<string, unknown> | undefined;
+  const fieldDesc = props
+    ? Object.entries(props)
+        .map(([k, v]) => `${k} (${(v as Record<string, string>).type ?? 'any'})`)
+        .join(', ')
+    : '';
+
   return {
     type: 'function',
     function: {
       name: 'output',
-      description: 'Return the structured output according to the schema',
-      parameters: zodToJsonSchema(schema),
+      description: `Return structured output with exactly these fields: ${fieldDesc}. Use these exact field names.`,
+      parameters: jsonSchema,
+      strict: true,
     },
   };
 }
@@ -267,12 +334,12 @@ interface AINodeRawConfig {
  * </transform>
  * ```
  */
-class AIRuntime implements NodeRuntime<AINodeRawConfig, unknown, AIResult> {
-  readonly type = 'ai';
+class AIRuntime implements NodeRuntime<AINodeRawConfig, unknown, unknown> {
+  readonly type = 'transform:ai';
 
   async execute(
     params: ExecutionParams<AINodeRawConfig, unknown>
-  ): Promise<AIResult> {
+  ): Promise<unknown> {
     const { config, state, input } = params;
 
     // Get API key from secrets
@@ -325,8 +392,20 @@ class AIRuntime implements NodeRuntime<AINodeRawConfig, unknown, AIResult> {
     };
 
     // Resolve template expressions in prompts
-    const systemPrompt = resolveTemplate(systemPromptTemplate, stateWithInput);
+    let systemPrompt = resolveTemplate(systemPromptTemplate, stateWithInput);
     const userPrompt = resolveTemplate(userPromptTemplate, stateWithInput);
+
+    // When output schema is defined, append field name instructions to system prompt
+    // to ensure the model uses the exact field names from the schema
+    if (outputSchema) {
+      const jsonSchema = zodToJsonSchema(outputSchema);
+      const props = jsonSchema.properties as Record<string, unknown> | undefined;
+      if (props) {
+        const fieldNames = Object.keys(props).join(', ');
+        const schemaInstruction = `\nYou MUST respond using the output tool with exactly these field names: ${fieldNames}. Use these exact names, not synonyms.`;
+        systemPrompt = systemPrompt ? systemPrompt + schemaInstruction : schemaInstruction;
+      }
+    }
 
     // Execute with retry logic
     let retries = 0;
@@ -347,7 +426,19 @@ class AIRuntime implements NodeRuntime<AINodeRawConfig, unknown, AIResult> {
 
         // Validate output against schema if provided
         if (outputSchema) {
-          const validation = outputSchema.safeParse(result.output);
+          let validation = outputSchema.safeParse(result.output);
+
+          // If validation fails, try remapping keys by type
+          if (!validation.success && typeof result.output === 'object' && result.output !== null) {
+            const remapped = remapKeysToSchema(result.output as Record<string, unknown>, outputSchema);
+            if (remapped) {
+              validation = outputSchema.safeParse(remapped);
+              if (validation.success) {
+                result.output = remapped;
+              }
+            }
+          }
+
           if (!validation.success) {
             const errorMessage = validation.error.issues
               .map((i) => `${i.path.join('.')}: ${i.message}`)
@@ -362,10 +453,9 @@ class AIRuntime implements NodeRuntime<AINodeRawConfig, unknown, AIResult> {
           result.output = validation.data;
         }
 
-        return {
-          ...result,
-          retries,
-        };
+        // Return just the output value for downstream data flow
+        // Usage/retries metadata stays internal
+        return result.output;
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
 

@@ -10,6 +10,8 @@ import type { ExecutionPlan, ExecutionWave, ExecutionOptions } from '../schedule
 import type { ParallelResult } from '../runtimes/control/parallel';
 import type { ForeachResult } from '../runtimes/control/foreach';
 import type { LoopResult } from '../runtimes/control/loop';
+import type { TimeoutResult } from '../runtimes/temporal/timeout';
+import { TimeoutError } from '../runtimes/errors';
 import { Semaphore, DEFAULT_MAX_CONCURRENCY } from '../scheduler';
 import { getRuntime, hasRuntime } from '../runtimes/registry';
 import { cloneStateForNode } from './state';
@@ -75,15 +77,33 @@ export async function execute(
   options: ExecutionOptions = {}
 ): Promise<void> {
   const maxConcurrency = options.maxConcurrency ?? DEFAULT_MAX_CONCURRENCY;
-  const { persistencePath, errorHandler, defaultRetryConfig, logPath } = options;
+  const { persistencePath, errorHandler, defaultRetryConfig, logPath, timeout } = options;
+
+  // Create global abort controller for timeout (item 4.4)
+  let globalAbort: AbortController | undefined;
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  if (timeout && timeout > 0) {
+    globalAbort = new AbortController();
+    timeoutId = setTimeout(() => {
+      globalAbort!.abort();
+    }, timeout);
+  }
 
   state.status = 'running';
 
   try {
     // Process waves sequentially
     for (const wave of plan.waves) {
+      // Check global abort before each wave
+      if (globalAbort?.signal.aborted) {
+        throw new TimeoutError(
+          `Workflow timed out after ${timeout}ms`,
+          timeout!
+        );
+      }
+
       state.currentWave = wave.waveNumber;
-      await executeWave(wave, plan.nodes, state, maxConcurrency, defaultRetryConfig);
+      await executeWave(wave, plan.nodes, state, maxConcurrency, defaultRetryConfig, globalAbort?.signal);
 
       // Persist state after each wave completes
       if (persistencePath) {
@@ -119,6 +139,11 @@ export async function execute(
 
     throw error;
   } finally {
+    // Clear global timeout timer
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+
     // Append execution log if logPath provided
     // Logs regardless of success/failure - both are valuable audit info
     if (logPath) {
@@ -145,7 +170,8 @@ async function executeWave(
   nodes: Map<string, NodeAST>,
   state: ExecutionState,
   maxConcurrency: number,
-  defaultRetryConfig?: RetryConfig
+  defaultRetryConfig?: RetryConfig,
+  signal?: AbortSignal
 ): Promise<void> {
   const semaphore = new Semaphore(maxConcurrency);
   const errors: Error[] = [];
@@ -160,7 +186,7 @@ async function executeWave(
 
       // Execute the node and record result
       // Note: nodes map passed for control flow handlers (parallel/foreach)
-      const result = await executeNode(node, nodes, state, maxConcurrency, defaultRetryConfig);
+      const result = await executeNode(node, nodes, state, maxConcurrency, defaultRetryConfig, signal);
       recordNodeResult(state, nodeId, result);
 
       // Check if the node execution failed
@@ -197,7 +223,8 @@ export async function executeNode(
   nodes: Map<string, NodeAST>,
   state: ExecutionState,
   maxConcurrency: number,
-  defaultRetryConfig?: RetryConfig
+  defaultRetryConfig?: RetryConfig,
+  signal?: AbortSignal
 ): Promise<NodeResult> {
   const startedAt = Date.now();
 
@@ -250,6 +277,7 @@ export async function executeNode(
               input,
               config: resolvedConfig,
               state: nodeState,
+              signal,
             });
           },
           retryConfig
@@ -277,6 +305,7 @@ export async function executeNode(
         input,
         config: resolvedConfig,
         state: nodeState,
+        signal,
       });
     }
 
@@ -312,6 +341,19 @@ export async function executeNode(
         defaultRetryConfig
       );
       output = loopOutput;
+    }
+
+    // Check if this is a timeout result that needs wrapped execution
+    if (isTimeoutResult(output)) {
+      const timeoutOutput = await handleTimeoutResult(
+        output,
+        nodes,
+        state,
+        maxConcurrency,
+        defaultRetryConfig,
+        signal
+      );
+      output = timeoutOutput;
     }
 
     const completedAt = Date.now();
@@ -401,6 +443,10 @@ function getNodeRuntimeType(node: NodeAST): string {
       return `control:${node.type}`;
     case 'checkpoint':
       return 'checkpoint';
+    case 'delay':
+      return 'temporal:delay';
+    case 'timeout':
+      return 'temporal:timeout';
     default:
       return node.type;
   }
@@ -792,4 +838,118 @@ async function handleLoopResult(
   }
 
   return lastOutput;
+}
+
+// ============================================================================
+// Timeout Execution Handling
+// ============================================================================
+
+/**
+ * Check if a node result output is a TimeoutResult.
+ */
+function isTimeoutResult(output: unknown): output is TimeoutResult {
+  return (
+    typeof output === 'object' &&
+    output !== null &&
+    'durationMs' in output &&
+    'children' in output &&
+    Array.isArray((output as TimeoutResult).children)
+  );
+}
+
+/**
+ * Execute children under a timeout constraint.
+ *
+ * Uses AbortController to cancel child execution if the timeout expires.
+ * On timeout, routes to onTimeout fallback node or throws TimeoutError.
+ */
+async function handleTimeoutResult(
+  result: TimeoutResult,
+  nodes: Map<string, NodeAST>,
+  state: ExecutionState,
+  maxConcurrency: number,
+  defaultRetryConfig?: RetryConfig,
+  parentSignal?: AbortSignal
+): Promise<unknown> {
+  const { durationMs, children, onTimeout } = result;
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), durationMs);
+
+  // If parent signal is already aborted or aborts, propagate
+  if (parentSignal) {
+    if (parentSignal.aborted) {
+      clearTimeout(timeoutId);
+      controller.abort();
+    } else {
+      parentSignal.addEventListener('abort', () => controller.abort(), { once: true });
+    }
+  }
+
+  try {
+    let lastOutput: unknown = undefined;
+
+    for (const node of children) {
+      if (controller.signal.aborted) {
+        throw new TimeoutError(
+          `Timeout exceeded: ${durationMs}ms`,
+          durationMs
+        );
+      }
+
+      const nodeResult = await executeNode(
+        node,
+        nodes,
+        state,
+        maxConcurrency,
+        defaultRetryConfig,
+        controller.signal
+      );
+      recordNodeResult(state, node.id, nodeResult);
+
+      if (nodeResult.status === 'failed') {
+        throw nodeResult.error ?? new Error(`Node ${node.id} failed`);
+      }
+
+      lastOutput = nodeResult.output;
+    }
+
+    return lastOutput;
+  } catch (error) {
+    // Check if this is a timeout (abort) error
+    const isAbort =
+      controller.signal.aborted &&
+      (error instanceof Error && (error.name === 'AbortError' || error.name === 'TimeoutError'));
+
+    if (isAbort || (error instanceof TimeoutError)) {
+      // Route to fallback if specified
+      if (onTimeout) {
+        const fallbackNode = nodes.get(onTimeout);
+        if (fallbackNode) {
+          const fallbackResult = await executeNode(
+            fallbackNode,
+            nodes,
+            state,
+            maxConcurrency,
+            undefined, // No retry for fallback
+            parentSignal // Use parent signal, not the timed-out one
+          );
+          recordNodeResult(state, fallbackNode.id, fallbackResult);
+
+          if (fallbackResult.status === 'failed') {
+            throw fallbackResult.error ?? new Error(`Timeout fallback node ${onTimeout} failed`);
+          }
+
+          return fallbackResult.output;
+        }
+      }
+
+      // No fallback — throw TimeoutError
+      throw new TimeoutError(`Timeout exceeded: ${durationMs}ms`, durationMs);
+    }
+
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }

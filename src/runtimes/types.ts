@@ -25,6 +25,8 @@ export interface ExecutionParams<TConfig = unknown, TInput = unknown> {
   config: TConfig;
   /** Current execution state */
   state: ExecutionState;
+  /** Optional abort signal for cooperative cancellation */
+  signal?: AbortSignal;
 }
 
 /**

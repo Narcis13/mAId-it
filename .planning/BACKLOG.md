@@ -14,7 +14,7 @@
 | 1 | Critical Bugfixes | done | 6/6 | 2026-02-09 |
 | 2 | Parser Expansion | done | 7/7 | 2026-02-09 |
 | 3 | Expression Hardening | done | 6/6 | 2026-02-09 |
-| 4 | Temporal Primitives | pending | 0/5 | — |
+| 4 | Temporal Primitives | done | 5/5 | 2026-02-09 |
 | 5 | Execution Fixes | pending | 0/5 | — |
 | 6 | Database Runtime | pending | 0/4 | — |
 | 7 | Advanced Control Flow | pending | 0/5 | — |
@@ -22,7 +22,7 @@
 | 9 | Composition & CLI | pending | 0/4 | — |
 | 10 | Self-Evolution | pending | 0/4 | — |
 
-**Overall:** 19/50 items complete
+**Overall:** 24/50 items complete
 
 ---
 
@@ -199,31 +199,31 @@ Batch 10 (Self-Evolution) ───────── Needs all above ──┘
 
 ### Items
 
-- [ ] **4.1 Duration parsing utility** (low)
+- [x] **4.1 Duration parsing utility** (low)
   - File: `src/runtimes/temporal/duration.ts` (new)
   - Parse: ISO ("PT30S", "P1D"), human ("5s", "1m", "2h", "500ms"), number (milliseconds)
   - Return: milliseconds (number)
   - Reusable across all temporal primitives
 
-- [ ] **4.2 Implement `<delay>` runtime** (low)
+- [x] **4.2 Implement `<delay>` runtime** (low)
   - File: `src/runtimes/temporal/delay.ts` (new)
   - Simple: `await Bun.sleep(parseDuration(config.duration))`
   - Register as `temporal:delay`
   - Pass-through: input data flows through unchanged
 
-- [ ] **4.3 Implement `<timeout>` wrapper runtime** (medium)
+- [x] **4.3 Implement `<timeout>` wrapper runtime** (medium)
   - File: `src/runtimes/temporal/timeout.ts` (new)
   - Wrap child node execution with `AbortSignal.timeout()`
   - On timeout: route to `on-timeout` fallback node
   - Register as `temporal:timeout`
 
-- [ ] **4.4 Wire global execution timeout** (low)
+- [x] **4.4 Wire global execution timeout** (low)
   - File: `src/execution/executor.ts`
   - `ExecutionOptions.timeout` exists but is never used
   - Add: `AbortController` wrapping the main `execute()` function
   - On timeout: throw `TimeoutError` with elapsed time info
 
-- [ ] **4.5 Pass AbortSignal to runtimes** (low)
+- [x] **4.5 Pass AbortSignal to runtimes** (low)
   - File: `src/execution/executor.ts`, `src/runtimes/types.ts`
   - Add `signal?: AbortSignal` to `ExecutionParams`
   - Thread it through from `executeWithRetry()` → `runtime.execute()`
@@ -470,6 +470,13 @@ Batch 10 (Self-Evolution) ───────── Needs all above ──┘
 ## Session Log
 
 *Updated after each session. Newest first.*
+
+### Session 2026-02-09 — Batch 4: Temporal Primitives
+**Duration:** ~8m
+**Items completed:** 4.1, 4.2, 4.3, 4.4, 4.5
+**Items deferred:** none
+**Learnings:** Reused `parseDurationToMs` from expression/functions/time.ts by exporting it — no code duplication needed. Timeout runtime follows the LoopResult pattern: returns metadata (TimeoutResult) for executor to intercept and handle. Global timeout uses AbortController + setTimeout rather than AbortSignal.timeout() to allow cleanup. Signal threading is additive — all existing runtimes ignore the optional signal field.
+**Next:** Batch 5 (Execution Fixes) or Batch 6/7/8 (all independent)
 
 ### Session 2026-02-09 — Batch 3: Expression Hardening
 **Duration:** ~8m

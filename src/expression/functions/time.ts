@@ -43,6 +43,8 @@ function parseDurationToMs(input: string | number): number | null {
   return total > 0 ? total : null;
 }
 
+export { parseDurationToMs };
+
 export const timeFunctions = {
   /**
    * Get current datetime as ISO string

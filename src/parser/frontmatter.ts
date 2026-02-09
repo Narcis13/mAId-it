@@ -5,7 +5,7 @@
  * Uses Bun.YAML for safe YAML parsing (prevents deserialization attacks).
  */
 
-import type { WorkflowMetadata, SourceLocation } from '../types';
+import type { WorkflowMetadata, SourceLocation, EvolutionConfig } from '../types';
 import type { FileSections, SplitResult } from './types';
 import { createError, type ValidationError } from '../types/errors';
 import { buildLineOffsets, createLocation } from './location';
@@ -200,6 +200,7 @@ export function parseFrontmatter(
     schemas: typeof data.schemas === 'object' && data.schemas !== null
       ? (data.schemas as Record<string, unknown>)
       : undefined,
+    evolution: parseEvolution(data.evolution),
   };
 
   return { success: true, metadata };
@@ -299,4 +300,41 @@ function parseSecrets(value: unknown): string[] | undefined {
 
   const secrets = value.filter((item): item is string => typeof item === 'string');
   return secrets.length > 0 ? secrets : undefined;
+}
+
+/**
+ * Parse evolution configuration from frontmatter.
+ * Spec: `evolution: { generation, parent, fitness, learnings[] }`
+ */
+function parseEvolution(value: unknown): EvolutionConfig | undefined {
+  if (value === undefined || value === null || typeof value !== 'object' || Array.isArray(value)) {
+    return undefined;
+  }
+
+  const obj = value as Record<string, unknown>;
+
+  // generation is required — must be a number
+  const generation = typeof obj.generation === 'number' ? obj.generation : undefined;
+  if (generation === undefined) {
+    return undefined;
+  }
+
+  const config: EvolutionConfig = { generation };
+
+  if (typeof obj.parent === 'string') {
+    config.parent = obj.parent;
+  }
+
+  if (typeof obj.fitness === 'number' && obj.fitness >= 0 && obj.fitness <= 1) {
+    config.fitness = obj.fitness;
+  }
+
+  if (Array.isArray(obj.learnings)) {
+    const learnings = obj.learnings.filter((item): item is string => typeof item === 'string');
+    if (learnings.length > 0) {
+      config.learnings = learnings;
+    }
+  }
+
+  return config;
 }

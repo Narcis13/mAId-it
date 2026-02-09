@@ -20,9 +20,9 @@
 | 7 | Advanced Control Flow | done | 5/5 | 2026-02-09 |
 | 8 | New Sink/Source Types | done | 4/4 | 2026-02-09 |
 | 9 | Composition & CLI | done | 4/4 | 2026-02-09 |
-| 10 | Self-Evolution | pending | 0/4 | — |
+| 10 | Self-Evolution | done | 4/4 | 2026-02-09 |
 
-**Overall:** 46/50 items complete
+**Overall:** 50/50 items complete
 
 ---
 
@@ -434,24 +434,24 @@ Batch 10 (Self-Evolution) ───────── Needs all above ──┘
 
 ### Items
 
-- [ ] **10.1 Parse evolution frontmatter section** (low)
+- [x] **10.1 Parse evolution frontmatter section** (low)
   - File: `src/parser/frontmatter.ts`
   - Spec: `evolution: { generation, parent, fitness, learnings[] }`
   - Parse and include in WorkflowMetadata
 
-- [ ] **10.2 Execution log learnings tracking** (medium)
+- [x] **10.2 Execution log learnings tracking** (medium)
   - File: `src/execution/logging.ts`, `src/execution/evolution/tracker.ts` (new)
   - After each run: compare metrics to historical baseline
   - Detect patterns: recurring failures, performance degradation, output drift
   - Append learnings to markdown footer in structured format
 
-- [ ] **10.3 Behavior versioning** (medium)
+- [x] **10.3 Behavior versioning** (medium)
   - File: `src/execution/evolution/behavior.ts` (new)
   - Track output characteristics: length, sentiment distribution, entity density
   - Compare to golden baseline, flag drift beyond thresholds
   - Auto-bump behavior version suffix when drift detected
 
-- [ ] **10.4 Feedback loop mechanism** (high)
+- [x] **10.4 Feedback loop mechanism** (high)
   - File: `src/execution/evolution/feedback.ts` (new)
   - Wire: Run complete → Collect metrics → Compare to baseline → Suggest improvements
   - Optional: AI-powered prompt improvement suggestions
@@ -470,6 +470,13 @@ Batch 10 (Self-Evolution) ───────── Needs all above ──┘
 ## Session Log
 
 *Updated after each session. Newest first.*
+
+### Session 2026-02-09 — Batch 10: Self-Evolution
+**Duration:** ~8m
+**Items completed:** 10.1, 10.2, 10.3, 10.4
+**Items deferred:** none
+**Learnings:** Evolution frontmatter parsing uses `generation` as the required field — without it the section is ignored (graceful degradation). The tracker stores metrics history in a `.metrics.json` sidecar file alongside the workflow, capped at 50 entries. Pattern detection uses sliding windows: recurring failures require 2+ past occurrences, performance degradation flags >50% slower than avg, success rate drop flags >20% below recent avg. Behavior profiling creates per-node type/length/keys snapshots and computes drift score as weighted average of signal magnitudes (threshold 0.3). Version bumping appends `+bN` suffix (semver build metadata) rather than changing the semver itself. The feedback loop orchestrates all three subsystems: metrics → patterns → behavior drift → suggestions, with history persisted in `.feedback.json` sidecar.
+**Next:** v1.1 complete — all 50/50 items done across 10 batches
 
 ### Session 2026-02-09 — Batch 9: Composition & CLI
 **Duration:** ~8m

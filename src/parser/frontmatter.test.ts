@@ -141,4 +141,78 @@ describe('parseFrontmatter', () => {
       }
     });
   });
+
+  describe('evolution parsing', () => {
+    test('parses full evolution config', () => {
+      const yaml = `name: test\nversion: "1.0.0"\nevolution:\n  generation: 3\n  parent: "1.0.0"\n  fitness: 0.85\n  learnings:\n    - "Retry on 429 improves reliability"\n    - "Shorter prompts reduce latency"`;
+      const lineOffsets = createLineOffsets(yaml);
+      const result = parseFrontmatter(yaml, lineOffsets, 4);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.metadata.evolution).toBeDefined();
+        expect(result.metadata.evolution!.generation).toBe(3);
+        expect(result.metadata.evolution!.parent).toBe('1.0.0');
+        expect(result.metadata.evolution!.fitness).toBe(0.85);
+        expect(result.metadata.evolution!.learnings).toEqual([
+          'Retry on 429 improves reliability',
+          'Shorter prompts reduce latency',
+        ]);
+      }
+    });
+
+    test('parses minimal evolution (generation only)', () => {
+      const yaml = `name: test\nversion: "1.0.0"\nevolution:\n  generation: 1`;
+      const lineOffsets = createLineOffsets(yaml);
+      const result = parseFrontmatter(yaml, lineOffsets, 4);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.metadata.evolution).toBeDefined();
+        expect(result.metadata.evolution!.generation).toBe(1);
+        expect(result.metadata.evolution!.parent).toBeUndefined();
+        expect(result.metadata.evolution!.fitness).toBeUndefined();
+        expect(result.metadata.evolution!.learnings).toBeUndefined();
+      }
+    });
+
+    test('ignores evolution without generation', () => {
+      const yaml = `name: test\nversion: "1.0.0"\nevolution:\n  parent: "0.9.0"`;
+      const lineOffsets = createLineOffsets(yaml);
+      const result = parseFrontmatter(yaml, lineOffsets, 4);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.metadata.evolution).toBeUndefined();
+      }
+    });
+
+    test('clamps fitness to 0-1 range', () => {
+      const yaml = `name: test\nversion: "1.0.0"\nevolution:\n  generation: 1\n  fitness: 1.5`;
+      const lineOffsets = createLineOffsets(yaml);
+      const result = parseFrontmatter(yaml, lineOffsets, 4);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        // fitness outside 0-1 is ignored
+        expect(result.metadata.evolution!.fitness).toBeUndefined();
+      }
+    });
+
+    test('no evolution field produces undefined', () => {
+      const yaml = `name: test\nversion: "1.0.0"`;
+      const lineOffsets = createLineOffsets(yaml);
+      const result = parseFrontmatter(yaml, lineOffsets, 4);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.metadata.evolution).toBeUndefined();
+      }
+    });
+
+    test('filters non-string learnings', () => {
+      const yaml = `name: test\nversion: "1.0.0"\nevolution:\n  generation: 2\n  learnings:\n    - "valid"\n    - 42\n    - "also valid"`;
+      const lineOffsets = createLineOffsets(yaml);
+      const result = parseFrontmatter(yaml, lineOffsets, 4);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.metadata.evolution!.learnings).toEqual(['valid', 'also valid']);
+      }
+    });
+  });
 });

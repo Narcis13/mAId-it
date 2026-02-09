@@ -50,6 +50,10 @@ export { resumeWorkflow, canResume } from './resume';
 export { formatExecutionLog, appendExecutionLog } from './logging';
 export type { ExecutionLogEntry } from './logging';
 
+// Re-export evolution module
+export { processExecutionFeedback, buildEvolutionSummary, formatFeedback } from './evolution';
+export type { FeedbackEntry, EvolutionSummary } from './evolution';
+
 // ============================================================================
 // Context-aware Expression Evaluation
 // ============================================================================

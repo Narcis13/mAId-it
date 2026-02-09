@@ -52,6 +52,20 @@ export interface ConfigField {
 }
 
 /**
+ * Evolution configuration for self-improving workflows.
+ */
+export interface EvolutionConfig {
+  /** Generation number (increments on each evolution) */
+  generation: number;
+  /** Parent workflow version that this evolved from */
+  parent?: string;
+  /** Fitness score from 0-1 (higher = better) */
+  fitness?: number;
+  /** Accumulated learnings from past executions */
+  learnings?: string[];
+}
+
+/**
  * Workflow metadata extracted from YAML frontmatter.
  */
 export interface WorkflowMetadata {
@@ -62,6 +76,7 @@ export interface WorkflowMetadata {
   config?: Record<string, ConfigField>;
   secrets?: string[];
   schemas?: Record<string, unknown>;
+  evolution?: EvolutionConfig;
 }
 
 // ============================================================================

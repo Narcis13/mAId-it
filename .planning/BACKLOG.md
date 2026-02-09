@@ -12,7 +12,7 @@
 | Batch | Name | Status | Items | Session Date |
 |-------|------|--------|-------|-------------|
 | 1 | Critical Bugfixes | done | 6/6 | 2026-02-09 |
-| 2 | Parser Expansion | pending | 0/7 | — |
+| 2 | Parser Expansion | done | 7/7 | 2026-02-09 |
 | 3 | Expression Hardening | pending | 0/6 | — |
 | 4 | Temporal Primitives | pending | 0/5 | — |
 | 5 | Execution Fixes | pending | 0/5 | — |
@@ -22,7 +22,7 @@
 | 9 | Composition & CLI | pending | 0/4 | — |
 | 10 | Self-Evolution | pending | 0/4 | — |
 
-**Overall:** 6/50 items complete
+**Overall:** 13/50 items complete
 
 ---
 
@@ -103,41 +103,41 @@ Batch 10 (Self-Evolution) ───────── Needs all above ──┘
 
 ### Items
 
-- [ ] **2.1 Add body parser test coverage** (medium)
+- [x] **2.1 Add body parser test coverage** (medium)
   - File: `src/parser/body.test.ts` (new file)
   - Currently: Only frontmatter tests exist. Body parsing is untested.
   - Add: Tests for each existing node type parsing (source, sink, transform, ai, control flow)
   - This provides a regression safety net before we modify the parser.
 
-- [ ] **2.2 Parse `<phase>` element** (medium)
+- [x] **2.2 Parse `<phase>` element** (medium)
   - File: `src/parser/body.ts`, `src/types/ast.ts`
   - Spec: `<phase name="gather">...</phase>` — logical grouping of nodes
   - Add PhaseNode to AST types, parse children as nodes within phase scope
   - Validator should treat phase as transparent wrapper (nodes visible globally)
 
-- [ ] **2.3 Parse `<context>` element** (low)
+- [x] **2.3 Parse `<context>` element** (low)
   - File: `src/parser/body.ts`, `src/types/ast.ts`
   - Spec: `<context id="global"><set key="x" value="y"/></context>`
   - Add ContextNode to AST with key-value pairs
   - Execution: Inject into nodeContext at the start of relevant scope
 
-- [ ] **2.4 Parse `<set>` element** (low)
+- [x] **2.4 Parse `<set>` element** (low)
   - File: `src/parser/body.ts`, `src/types/ast.ts`
   - Spec: `<set var="name" value="{{expr}}"/>` — variable assignment
   - Standalone element that can appear inside loops, phases, etc.
   - Execution: Evaluate expression and store in nodeContext
 
-- [ ] **2.5 Parse `<delay>` element** (low)
+- [x] **2.5 Parse `<delay>` element** (low)
   - File: `src/parser/body.ts`, `src/types/ast.ts`
   - Spec: `<delay duration="5s"/>` — pause execution
   - Simple node type with a single `duration` attribute
 
-- [ ] **2.6 Parse `<timeout>` wrapper element** (low)
+- [x] **2.6 Parse `<timeout>` wrapper element** (low)
   - File: `src/parser/body.ts`, `src/types/ast.ts`
   - Spec: `<timeout duration="30s" on-timeout="fallback">...</timeout>`
   - Wrapper node with child nodes and timeout/fallback configuration
 
-- [ ] **2.7 Parse per-node `<on-error>` element** (medium)
+- [x] **2.7 Parse per-node `<on-error>` element** (medium)
   - File: `src/parser/body.ts`, `src/types/ast.ts`
   - Spec: `<on-error><retry when="..." max="3" backoff="exponential"/></on-error>`
   - Extract retry config, fallback config from `<on-error>` children
@@ -470,6 +470,13 @@ Batch 10 (Self-Evolution) ───────── Needs all above ──┘
 ## Session Log
 
 *Updated after each session. Newest first.*
+
+### Session 2026-02-09 — Batch 2: Parser Expansion
+**Duration:** ~8m
+**Items completed:** 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7
+**Items deferred:** none
+**Learnings:** `<phase>` uses `name` as id, `<set>` uses `var` as id — special id derivation in parseNode. `<on-error>` is a post-processing step on any node, not a standalone node type.
+**Next:** Batch 3 (Expression Hardening) or Batch 4/5/6/7/8 (now unblocked)
 
 ### Session 2026-02-09 — Batch 1: Critical Bugfixes
 **Duration:** ~10m

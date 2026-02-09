@@ -81,7 +81,24 @@ export type NodeType =
   | 'while'
   | 'foreach'
   | 'parallel'
-  | 'checkpoint';
+  | 'checkpoint'
+  | 'phase'
+  | 'context'
+  | 'set'
+  | 'delay'
+  | 'timeout';
+
+/**
+ * Per-node error handling configuration from <on-error> child element.
+ */
+export interface ErrorConfig {
+  retry?: {
+    when?: string;
+    max?: number;
+    backoff?: 'linear' | 'exponential' | 'fixed';
+  };
+  fallback?: string;
+}
 
 /**
  * Base interface for all AST nodes.
@@ -92,6 +109,8 @@ export interface BaseNode {
   loc: SourceLocation;
   /** Reference to another node's output */
   input?: string;
+  /** Per-node error handling from <on-error> child */
+  errorConfig?: ErrorConfig;
 }
 
 // ============================================================================
@@ -206,6 +225,55 @@ export interface CheckpointNode extends BaseNode {
 }
 
 // ============================================================================
+// Structural / Temporal Nodes
+// ============================================================================
+
+/**
+ * Phase node - logical grouping of nodes.
+ * Transparent wrapper: child nodes are visible globally.
+ */
+export interface PhaseNode extends BaseNode {
+  type: 'phase';
+  name: string;
+  children: NodeAST[];
+}
+
+/**
+ * Context node - declares scoped variables.
+ */
+export interface ContextNode extends BaseNode {
+  type: 'context';
+  entries: Array<{ key: string; value: string }>;
+}
+
+/**
+ * Set node - variable assignment.
+ */
+export interface SetNode extends BaseNode {
+  type: 'set';
+  var: string;
+  value: string;
+}
+
+/**
+ * Delay node - pause execution for a duration.
+ */
+export interface DelayNode extends BaseNode {
+  type: 'delay';
+  duration: string;
+}
+
+/**
+ * Timeout node - wraps children with a time limit.
+ */
+export interface TimeoutNode extends BaseNode {
+  type: 'timeout';
+  duration: string;
+  onTimeout?: string;
+  children: NodeAST[];
+}
+
+// ============================================================================
 // Union Type for All Nodes
 // ============================================================================
 
@@ -222,7 +290,12 @@ export type NodeAST =
   | WhileNode
   | ForeachNode
   | ParallelNode
-  | CheckpointNode;
+  | CheckpointNode
+  | PhaseNode
+  | ContextNode
+  | SetNode
+  | DelayNode
+  | TimeoutNode;
 
 // ============================================================================
 // Complete Workflow AST

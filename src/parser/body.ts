@@ -19,6 +19,12 @@ import type {
   ForeachNode,
   ParallelNode,
   CheckpointNode,
+  PhaseNode,
+  ContextNode,
+  SetNode,
+  DelayNode,
+  TimeoutNode,
+  ErrorConfig,
   SourceLocation,
 } from '../types';
 import { createError, type ValidationError } from '../types/errors';
@@ -215,48 +221,83 @@ function parseNode(
 
   // Get attributes from ':@' property
   const attrs = entry[':@'] || {};
-  const id = String(attrs.id || '');
+
+  // Derive id: most nodes use attrs.id, but phase uses name, set uses var
+  let id = String(attrs.id || '');
+  if (!id && tagName === 'phase') id = String(attrs.name || '');
+  if (!id && tagName === 'set') id = String(attrs.var || '');
 
   // Find location in source
   const loc = findNodeLocation(tagName, id, bodySource, bodyLineOffset, bodyByteOffset, fullLineOffsets);
 
-  // Validate required id attribute
+  // Validate required id attribute (all nodes need some identifier)
   if (!id) {
+    const hint = tagName === 'phase'
+      ? `Add name="phase-name" to the <phase> element`
+      : tagName === 'set'
+        ? `Add var="variable-name" to the <set> element`
+        : `Add id="unique-id" to the <${tagName}> element`;
     return {
       success: false,
       errors: [
         createError(
           'VALID_MISSING_REQUIRED_FIELD',
-          `<${tagName}> requires an "id" attribute`,
+          `<${tagName}> requires an identifier attribute`,
           loc,
-          [`Add id="unique-id" to the <${tagName}> element`]
+          [hint]
         ),
       ],
     };
   }
 
   // Parse based on tag name
+  let result: NodeResult;
   switch (tagName) {
     case 'source':
-      return parseSourceNode(entry, tagName, id, attrs, loc);
+      result = parseSourceNode(entry, tagName, id, attrs, loc);
+      break;
     case 'transform':
-      return parseTransformNode(entry, tagName, id, attrs, loc);
+      result = parseTransformNode(entry, tagName, id, attrs, loc);
+      break;
     case 'sink':
-      return parseSinkNode(entry, tagName, id, attrs, loc);
+      result = parseSinkNode(entry, tagName, id, attrs, loc);
+      break;
     case 'branch':
-      return parseBranchNode(entry, tagName, id, attrs, loc, bodySource, bodyLineOffset, bodyByteOffset, fullLineOffsets, bodyLineOffsets);
+      result = parseBranchNode(entry, tagName, id, attrs, loc, bodySource, bodyLineOffset, bodyByteOffset, fullLineOffsets, bodyLineOffsets);
+      break;
     case 'if':
-      return parseIfNode(entry, tagName, id, attrs, loc, bodySource, bodyLineOffset, bodyByteOffset, fullLineOffsets, bodyLineOffsets);
+      result = parseIfNode(entry, tagName, id, attrs, loc, bodySource, bodyLineOffset, bodyByteOffset, fullLineOffsets, bodyLineOffsets);
+      break;
     case 'loop':
-      return parseLoopNode(entry, tagName, id, attrs, loc, bodySource, bodyLineOffset, bodyByteOffset, fullLineOffsets, bodyLineOffsets);
+      result = parseLoopNode(entry, tagName, id, attrs, loc, bodySource, bodyLineOffset, bodyByteOffset, fullLineOffsets, bodyLineOffsets);
+      break;
     case 'while':
-      return parseWhileNode(entry, tagName, id, attrs, loc, bodySource, bodyLineOffset, bodyByteOffset, fullLineOffsets, bodyLineOffsets);
+      result = parseWhileNode(entry, tagName, id, attrs, loc, bodySource, bodyLineOffset, bodyByteOffset, fullLineOffsets, bodyLineOffsets);
+      break;
     case 'foreach':
-      return parseForeachNode(entry, tagName, id, attrs, loc, bodySource, bodyLineOffset, bodyByteOffset, fullLineOffsets, bodyLineOffsets);
+      result = parseForeachNode(entry, tagName, id, attrs, loc, bodySource, bodyLineOffset, bodyByteOffset, fullLineOffsets, bodyLineOffsets);
+      break;
     case 'parallel':
-      return parseParallelNode(entry, tagName, id, attrs, loc, bodySource, bodyLineOffset, bodyByteOffset, fullLineOffsets, bodyLineOffsets);
+      result = parseParallelNode(entry, tagName, id, attrs, loc, bodySource, bodyLineOffset, bodyByteOffset, fullLineOffsets, bodyLineOffsets);
+      break;
     case 'checkpoint':
-      return parseCheckpointNode(entry, tagName, id, attrs, loc);
+      result = parseCheckpointNode(entry, tagName, id, attrs, loc);
+      break;
+    case 'phase':
+      result = parsePhaseNode(entry, tagName, id, attrs, loc, bodySource, bodyLineOffset, bodyByteOffset, fullLineOffsets, bodyLineOffsets);
+      break;
+    case 'context':
+      result = parseContextNode(entry, tagName, id, attrs, loc);
+      break;
+    case 'set':
+      result = parseSetNode(entry, tagName, id, attrs, loc);
+      break;
+    case 'delay':
+      result = parseDelayNode(entry, tagName, id, attrs, loc);
+      break;
+    case 'timeout':
+      result = parseTimeoutNode(entry, tagName, id, attrs, loc, bodySource, bodyLineOffset, bodyByteOffset, fullLineOffsets, bodyLineOffsets);
+      break;
     default:
       return {
         success: false,
@@ -265,11 +306,21 @@ function parseNode(
             'VALID_UNKNOWN_NODE_TYPE',
             `Unknown node type: <${tagName}>`,
             loc,
-            ['Valid node types: source, transform, sink, branch, if, loop, while, foreach, parallel, checkpoint']
+            ['Valid node types: source, transform, sink, branch, if, loop, while, foreach, parallel, checkpoint, phase, context, set, delay, timeout']
           ),
         ],
       };
   }
+
+  // Post-processing: extract <on-error> config from children
+  if (result.success) {
+    const errorConfig = extractOnError(entry[tagName]);
+    if (errorConfig) {
+      result.node.errorConfig = errorConfig;
+    }
+  }
+
+  return result;
 }
 
 /**
@@ -840,6 +891,274 @@ function parseCheckpointNode(
   };
 
   return { success: true, node };
+}
+
+/**
+ * Parse a <phase> node — logical grouping of nodes.
+ */
+function parsePhaseNode(
+  entry: ParsedXMLNode,
+  tagName: string,
+  id: string,
+  attrs: Record<string, string | number | boolean>,
+  loc: SourceLocation,
+  bodySource: string,
+  bodyLineOffset: number,
+  bodyByteOffset: number,
+  fullLineOffsets: number[],
+  bodyLineOffsets: number[]
+): NodeResult {
+  const name = String(attrs.name || id);
+  const children = entry[tagName];
+  const childNodes: NodeAST[] = [];
+  const errors: ValidationError[] = [];
+
+  if (Array.isArray(children)) {
+    for (const child of children) {
+      const result = parseNode(child, bodySource, bodyLineOffset, bodyByteOffset, fullLineOffsets, bodyLineOffsets);
+      if (result.success) {
+        childNodes.push(result.node);
+      } else if (result.errors.length > 0) {
+        errors.push(...result.errors);
+      }
+    }
+  }
+
+  if (errors.length > 0) {
+    return { success: false, errors };
+  }
+
+  const node: PhaseNode = {
+    type: 'phase',
+    id,
+    loc,
+    name,
+    children: childNodes,
+    input: attrs.input ? String(attrs.input) : undefined,
+  };
+
+  return { success: true, node };
+}
+
+/**
+ * Parse a <context> node — scoped variable declarations via <set> children.
+ */
+function parseContextNode(
+  entry: ParsedXMLNode,
+  tagName: string,
+  id: string,
+  attrs: Record<string, string | number | boolean>,
+  loc: SourceLocation
+): NodeResult {
+  const children = entry[tagName];
+  const entries: Array<{ key: string; value: string }> = [];
+
+  if (Array.isArray(children)) {
+    for (const child of children) {
+      if (typeof child !== 'object' || child === null) continue;
+      const childEntry = child as ParsedXMLNode;
+      if ('set' in childEntry) {
+        const setAttrs = childEntry[':@'] || {};
+        const key = String(setAttrs.key || setAttrs.var || '');
+        const value = String(setAttrs.value || '');
+        if (key) {
+          entries.push({ key, value });
+        }
+      }
+    }
+  }
+
+  const node: ContextNode = {
+    type: 'context',
+    id,
+    loc,
+    entries,
+    input: attrs.input ? String(attrs.input) : undefined,
+  };
+
+  return { success: true, node };
+}
+
+/**
+ * Parse a <set> node — standalone variable assignment.
+ */
+function parseSetNode(
+  _entry: ParsedXMLNode,
+  _tagName: string,
+  id: string,
+  attrs: Record<string, string | number | boolean>,
+  loc: SourceLocation
+): NodeResult {
+  const varName = String(attrs.var || '');
+  const value = String(attrs.value || '');
+
+  if (!varName) {
+    return {
+      success: false,
+      errors: [
+        createError(
+          'VALID_MISSING_REQUIRED_FIELD',
+          '<set> requires a "var" attribute',
+          loc,
+          ['Add var="variable-name" to the <set> element']
+        ),
+      ],
+    };
+  }
+
+  const node: SetNode = {
+    type: 'set',
+    id,
+    loc,
+    var: varName,
+    value,
+    input: attrs.input ? String(attrs.input) : undefined,
+  };
+
+  return { success: true, node };
+}
+
+/**
+ * Parse a <delay> node — pause execution.
+ */
+function parseDelayNode(
+  _entry: ParsedXMLNode,
+  _tagName: string,
+  id: string,
+  attrs: Record<string, string | number | boolean>,
+  loc: SourceLocation
+): NodeResult {
+  const duration = String(attrs.duration || '');
+
+  if (!duration) {
+    return {
+      success: false,
+      errors: [
+        createError(
+          'VALID_MISSING_REQUIRED_FIELD',
+          '<delay> requires a "duration" attribute',
+          loc,
+          ['Add duration="5s" to the <delay> element']
+        ),
+      ],
+    };
+  }
+
+  const node: DelayNode = {
+    type: 'delay',
+    id,
+    loc,
+    duration,
+    input: attrs.input ? String(attrs.input) : undefined,
+  };
+
+  return { success: true, node };
+}
+
+/**
+ * Parse a <timeout> wrapper node — wraps children with a time limit.
+ */
+function parseTimeoutNode(
+  entry: ParsedXMLNode,
+  tagName: string,
+  id: string,
+  attrs: Record<string, string | number | boolean>,
+  loc: SourceLocation,
+  bodySource: string,
+  bodyLineOffset: number,
+  bodyByteOffset: number,
+  fullLineOffsets: number[],
+  bodyLineOffsets: number[]
+): NodeResult {
+  const duration = String(attrs.duration || '');
+  const onTimeout = attrs['on-timeout'] ? String(attrs['on-timeout']) : undefined;
+
+  if (!duration) {
+    return {
+      success: false,
+      errors: [
+        createError(
+          'VALID_MISSING_REQUIRED_FIELD',
+          '<timeout> requires a "duration" attribute',
+          loc,
+          ['Add duration="30s" to the <timeout> element']
+        ),
+      ],
+    };
+  }
+
+  const children = entry[tagName];
+  const childNodes: NodeAST[] = [];
+  const errors: ValidationError[] = [];
+
+  if (Array.isArray(children)) {
+    for (const child of children) {
+      const result = parseNode(child, bodySource, bodyLineOffset, bodyByteOffset, fullLineOffsets, bodyLineOffsets);
+      if (result.success) {
+        childNodes.push(result.node);
+      } else if (result.errors.length > 0) {
+        errors.push(...result.errors);
+      }
+    }
+  }
+
+  if (errors.length > 0) {
+    return { success: false, errors };
+  }
+
+  const node: TimeoutNode = {
+    type: 'timeout',
+    id,
+    loc,
+    duration,
+    onTimeout,
+    children: childNodes,
+    input: attrs.input ? String(attrs.input) : undefined,
+  };
+
+  return { success: true, node };
+}
+
+/**
+ * Extract <on-error> configuration from a node's children.
+ * Returns ErrorConfig if found, undefined otherwise.
+ */
+function extractOnError(children: unknown): ErrorConfig | undefined {
+  if (!Array.isArray(children)) return undefined;
+
+  for (const child of children) {
+    if (typeof child !== 'object' || child === null) continue;
+    const childEntry = child as ParsedXMLNode;
+    if (!('on-error' in childEntry)) continue;
+
+    const errorChildren = childEntry['on-error'];
+    if (!Array.isArray(errorChildren)) return {};
+
+    const config: ErrorConfig = {};
+
+    for (const errorChild of errorChildren) {
+      if (typeof errorChild !== 'object' || errorChild === null) continue;
+      const ec = errorChild as ParsedXMLNode;
+
+      if ('retry' in ec) {
+        const retryAttrs = ec[':@'] || {};
+        config.retry = {
+          when: retryAttrs.when ? String(retryAttrs.when) : undefined,
+          max: retryAttrs.max ? parseInt(String(retryAttrs.max), 10) : undefined,
+          backoff: (['linear', 'exponential', 'fixed'].includes(String(retryAttrs.backoff || ''))
+            ? String(retryAttrs.backoff) as 'linear' | 'exponential' | 'fixed'
+            : undefined),
+        };
+      } else if ('fallback' in ec) {
+        const fallbackAttrs = ec[':@'] || {};
+        config.fallback = String(fallbackAttrs.node || fallbackAttrs.ref || '');
+      }
+    }
+
+    return config;
+  }
+
+  return undefined;
 }
 
 /**

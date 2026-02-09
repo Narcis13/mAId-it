@@ -86,7 +86,9 @@ export type NodeType =
   | 'context'
   | 'set'
   | 'delay'
-  | 'timeout';
+  | 'timeout'
+  | 'include'
+  | 'call';
 
 /**
  * Per-node error handling configuration from <on-error> child element.
@@ -294,6 +296,34 @@ export interface TimeoutNode extends BaseNode {
 }
 
 // ============================================================================
+// Composition Nodes
+// ============================================================================
+
+/**
+ * Include node - execute another workflow inline.
+ * Output available as `includeId.output` in parent scope.
+ */
+export interface IncludeNode extends BaseNode {
+  type: 'include';
+  /** Path to the workflow file to include */
+  workflow: string;
+  /** Input bindings passed to the sub-workflow */
+  bindings: Array<{ key: string; value: string }>;
+}
+
+/**
+ * Call node - invoke another workflow with function-call semantics.
+ * Isolated execution context; only args are passed in, only output returned.
+ */
+export interface CallNode extends BaseNode {
+  type: 'call';
+  /** Path to the workflow file to call */
+  workflow: string;
+  /** Arguments passed to the sub-workflow (key-value pairs from attributes) */
+  args: Record<string, string>;
+}
+
+// ============================================================================
 // Union Type for All Nodes
 // ============================================================================
 
@@ -315,7 +345,9 @@ export type NodeAST =
   | ContextNode
   | SetNode
   | DelayNode
-  | TimeoutNode;
+  | TimeoutNode
+  | IncludeNode
+  | CallNode;
 
 // ============================================================================
 // Complete Workflow AST

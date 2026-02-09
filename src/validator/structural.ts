@@ -165,6 +165,8 @@ function validateNode(node: NodeAST): ValidationError[] {
     case 'set':
     case 'delay':
     case 'timeout':
+    case 'include':
+    case 'call':
       // These node types are validated at parse time
       break;
     default:

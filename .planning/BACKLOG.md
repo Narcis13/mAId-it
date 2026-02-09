@@ -19,10 +19,10 @@
 | 6 | Database Runtime | done | 4/4 | 2026-02-09 |
 | 7 | Advanced Control Flow | done | 5/5 | 2026-02-09 |
 | 8 | New Sink/Source Types | done | 4/4 | 2026-02-09 |
-| 9 | Composition & CLI | pending | 0/4 | — |
+| 9 | Composition & CLI | done | 4/4 | 2026-02-09 |
 | 10 | Self-Evolution | pending | 0/4 | — |
 
-**Overall:** 42/50 items complete
+**Overall:** 46/50 items complete
 
 ---
 
@@ -397,26 +397,26 @@ Batch 10 (Self-Evolution) ───────── Needs all above ──┘
 
 ### Items
 
-- [ ] **9.1 `<include>` workflow composition** (high)
+- [x] **9.1 `<include>` workflow composition** (high)
   - File: `src/runtimes/composition/include.ts` (new)
   - Parse included workflow file, execute as sub-workflow
   - Bind inputs via `<bind>` elements
   - Output available as `includeId.output` in parent scope
   - Cycle detection: prevent recursive includes
 
-- [ ] **9.2 `<call>` workflow invocation** (medium)
+- [x] **9.2 `<call>` workflow invocation** (medium)
   - File: `src/runtimes/composition/call.ts` (new)
   - Like include but function-call semantics
   - Pass args, receive output, isolated execution context
   - Register as `composition:call`
 
-- [ ] **9.3 `flowscript inspect` command** (medium)
+- [x] **9.3 `flowscript inspect` command** (medium)
   - File: `src/cli/inspect.ts` (new), `src/cli/index.ts`
   - Parse workflow, display structure: nodes, dependencies, types
   - `--deps` flag: show dependency graph (text-based DAG)
   - `--schema` flag: show input/output schemas
 
-- [ ] **9.4 `flowscript test` command** (high)
+- [x] **9.4 `flowscript test` command** (high)
   - File: `src/cli/test.ts` (new), `src/cli/index.ts`
   - Define test cases inline in workflow or in `.test.flow.md` files
   - Mock sources (provide fixture data instead of HTTP calls)
@@ -470,6 +470,13 @@ Batch 10 (Self-Evolution) ───────── Needs all above ──┘
 ## Session Log
 
 *Updated after each session. Newest first.*
+
+### Session 2026-02-09 — Batch 9: Composition & CLI
+**Duration:** ~8m
+**Items completed:** 9.1, 9.2, 9.3, 9.4
+**Items deferred:** none
+**Learnings:** Composition runtimes (include/call) reuse the full parse→validate→schedule→execute pipeline as a sub-workflow. Cycle detection uses a module-level `Set<string>` of active workflow paths — works because Bun's event loop is single-threaded. `$workflowDir` in globalContext enables relative path resolution for nested includes. Include passes parent config/secrets through; call creates a fully isolated context (only args + input). The test command uses `Bun.YAML.parse` for extracting test cases from `.test.flow.md` YAML frontmatter. Test discovery works both ways: pass a `.test.flow.md` directly, or pass a `.flow.md` and it auto-discovers the companion test file.
+**Next:** Batch 10 (Self-Evolution) — the final batch
 
 ### Session 2026-02-09 — Batch 8: New Sink/Source Types
 **Duration:** ~8m

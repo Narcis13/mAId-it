@@ -9,6 +9,8 @@
 import { Command } from 'commander';
 import { validateFile, validateFiles } from './validate';
 import { runWorkflow } from './run';
+import { inspectWorkflow } from './inspect';
+import { testWorkflow } from './test';
 
 // Read package version
 const packageJson = await Bun.file(new URL('../../package.json', import.meta.url)).json();
@@ -73,6 +75,52 @@ program
       dryRun: options.dryRun,
       config: options.config,
       input: options.input,
+      format: options.format === 'json' ? 'json' : 'text',
+      noColor: options.color === false,
+    });
+
+    console.log(result.output);
+    process.exit(result.success ? 0 : 1);
+  });
+
+// Inspect command
+program
+  .command('inspect')
+  .description('Inspect a .flow.md workflow structure')
+  .argument('<file>', 'Workflow file to inspect')
+  .option('--deps', 'Show dependency graph')
+  .option('--schema', 'Show input/output schemas')
+  .option('-f, --format <format>', 'Output format (text, json)', 'text')
+  .option('--no-color', 'Disable colored output')
+  .action(async (file: string, options: {
+    deps?: boolean;
+    schema?: boolean;
+    format?: string;
+    color?: boolean;
+  }) => {
+    const result = await inspectWorkflow(file, {
+      deps: options.deps,
+      schema: options.schema,
+      format: options.format === 'json' ? 'json' : 'text',
+      noColor: options.color === false,
+    });
+
+    console.log(result.output);
+    process.exit(result.success ? 0 : 1);
+  });
+
+// Test command
+program
+  .command('test')
+  .description('Run workflow tests from .test.flow.md files')
+  .argument('<file>', 'Workflow or test file')
+  .option('-f, --format <format>', 'Output format (text, json)', 'text')
+  .option('--no-color', 'Disable colored output')
+  .action(async (file: string, options: {
+    format?: string;
+    color?: boolean;
+  }) => {
+    const result = await testWorkflow(file, {
       format: options.format === 'json' ? 'json' : 'text',
       noColor: options.color === false,
     });

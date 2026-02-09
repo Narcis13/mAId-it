@@ -25,6 +25,8 @@ import type {
   SetNode,
   DelayNode,
   TimeoutNode,
+  IncludeNode,
+  CallNode,
   ErrorConfig,
   SourceLocation,
 } from '../types';
@@ -299,6 +301,12 @@ function parseNode(
     case 'timeout':
       result = parseTimeoutNode(entry, tagName, id, attrs, loc, bodySource, bodyLineOffset, bodyByteOffset, fullLineOffsets, bodyLineOffsets);
       break;
+    case 'include':
+      result = parseIncludeNode(entry, tagName, id, attrs, loc);
+      break;
+    case 'call':
+      result = parseCallNode(entry, tagName, id, attrs, loc);
+      break;
     default:
       return {
         success: false,
@@ -307,7 +315,7 @@ function parseNode(
             'VALID_UNKNOWN_NODE_TYPE',
             `Unknown node type: <${tagName}>`,
             loc,
-            ['Valid node types: source, transform, sink, branch, if, loop, while, foreach, parallel, checkpoint, phase, context, set, delay, timeout']
+            ['Valid node types: source, transform, sink, branch, if, loop, while, foreach, parallel, checkpoint, phase, context, set, delay, timeout, include, call']
           ),
         ],
       };
@@ -1166,6 +1174,110 @@ function parseTimeoutNode(
     duration,
     onTimeout,
     children: childNodes,
+    input: attrs.input ? String(attrs.input) : undefined,
+  };
+
+  return { success: true, node };
+}
+
+/**
+ * Parse an <include> node — workflow composition.
+ * Includes another workflow file inline with input bindings.
+ */
+function parseIncludeNode(
+  entry: ParsedXMLNode,
+  tagName: string,
+  id: string,
+  attrs: Record<string, string | number | boolean>,
+  loc: SourceLocation
+): NodeResult {
+  const workflow = String(attrs.workflow || '');
+
+  if (!workflow) {
+    return {
+      success: false,
+      errors: [
+        createError(
+          'VALID_MISSING_REQUIRED_FIELD',
+          '<include> requires a "workflow" attribute',
+          loc,
+          ['Add workflow="./sub-workflow.flow.md" to the <include> element']
+        ),
+      ],
+    };
+  }
+
+  // Parse <bind> children for input bindings
+  const bindings: Array<{ key: string; value: string }> = [];
+  const children = entry[tagName];
+  if (Array.isArray(children)) {
+    for (const child of children) {
+      if (typeof child !== 'object' || child === null) continue;
+      const childEntry = child as ParsedXMLNode;
+      if ('bind' in childEntry) {
+        const bindAttrs = childEntry[':@'] || {};
+        const key = String(bindAttrs.key || '');
+        const value = String(bindAttrs.value || '');
+        if (key) {
+          bindings.push({ key, value });
+        }
+      }
+    }
+  }
+
+  const node: IncludeNode = {
+    type: 'include',
+    id,
+    loc,
+    workflow,
+    bindings,
+    input: attrs.input ? String(attrs.input) : undefined,
+  };
+
+  return { success: true, node };
+}
+
+/**
+ * Parse a <call> node — workflow invocation with function-call semantics.
+ * Passes arguments, receives output, isolated execution context.
+ */
+function parseCallNode(
+  _entry: ParsedXMLNode,
+  _tagName: string,
+  id: string,
+  attrs: Record<string, string | number | boolean>,
+  loc: SourceLocation
+): NodeResult {
+  const workflow = String(attrs.workflow || '');
+
+  if (!workflow) {
+    return {
+      success: false,
+      errors: [
+        createError(
+          'VALID_MISSING_REQUIRED_FIELD',
+          '<call> requires a "workflow" attribute',
+          loc,
+          ['Add workflow="./sub-workflow.flow.md" to the <call> element']
+        ),
+      ],
+    };
+  }
+
+  // All attributes except id, workflow, and input are treated as arguments
+  const args: Record<string, string> = {};
+  for (const [key, value] of Object.entries(attrs)) {
+    if (key !== 'id' && key !== 'workflow' && key !== 'input') {
+      args[key] = String(value);
+    }
+  }
+
+  const node: CallNode = {
+    type: 'call',
+    id,
+    loc,
+    workflow,
+    args,
     input: attrs.input ? String(attrs.input) : undefined,
   };
 

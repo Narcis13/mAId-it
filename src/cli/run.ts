@@ -16,6 +16,7 @@ import type { ExecutionState } from '../execution/types';
 
 // Side-effect import: auto-registers all runtimes before execution
 import '../runtimes';
+import path from 'node:path';
 import type { NodeAST, SourceNode, SinkNode, TransformNode } from '../types/ast';
 import {
   formatValidationResult,
@@ -176,11 +177,15 @@ export async function runWorkflow(
   }
 
   // Create execution state
+  const workflowDir = path.dirname(path.resolve(filePath));
   const state = createExecutionState({
     workflowId: parseResult.data.metadata.name,
     config: mergedConfig,
     secrets,
-    globalContext: inputData !== undefined ? { input: inputData } : {},
+    globalContext: {
+      ...(inputData !== undefined ? { input: inputData } : {}),
+      $workflowDir: workflowDir,
+    },
   });
 
   // Execute with progress display

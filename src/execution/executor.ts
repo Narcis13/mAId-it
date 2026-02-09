@@ -450,6 +450,10 @@ function getNodeRuntimeType(node: NodeAST): string {
       return 'temporal:delay';
     case 'timeout':
       return 'temporal:timeout';
+    case 'include':
+      return 'composition:include';
+    case 'call':
+      return 'composition:call';
     default:
       return node.type;
   }

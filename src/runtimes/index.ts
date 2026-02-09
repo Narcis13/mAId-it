@@ -65,6 +65,9 @@ import './database/index.ts';
 // Side-effect import: auto-registers Email runtimes
 import './email/index.ts';
 
+// Side-effect import: auto-registers Composition runtimes
+import './composition/index.ts';
+
 // Re-export HTTP runtimes for convenience
 export { httpSourceRuntime, httpSinkRuntime } from './http/index.ts';
 
@@ -139,3 +142,9 @@ export type { EmailSinkConfig, EmailSinkResult } from './types.ts';
 
 // Re-export HTTP auth utilities
 export { getOAuth2Token, clearOAuth2Token, clearAllOAuth2Tokens } from './http/auth.ts';
+
+// Re-export Composition runtimes for convenience
+export { includeRuntime, callRuntime, activeWorkflowPaths } from './composition/index.ts';
+
+// Re-export Composition types
+export type { IncludeConfig, CallConfig } from './composition/index.ts';

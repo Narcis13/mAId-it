@@ -137,6 +137,54 @@ export interface HttpSinkResult {
 // File Configuration Types
 // ============================================================================
 
+// ============================================================================
+// Database Configuration Types
+// ============================================================================
+
+/**
+ * Configuration for database source nodes (querying data).
+ */
+export interface DatabaseSourceConfig {
+  /** Connection URL (postgres://... or sqlite:///path) — may contain template expressions */
+  connection: string;
+  /** SQL query with parameterized placeholders ($1, $2, ...) */
+  query: string;
+  /** Query parameters (resolved from template expressions) */
+  params?: unknown[];
+}
+
+/**
+ * Configuration for database sink nodes (writing data).
+ */
+export interface DatabaseSinkConfig {
+  /** Connection URL — may contain template expressions */
+  connection: string;
+  /** Target table name */
+  table: string;
+  /** Write operation type (default: insert) */
+  operation?: 'insert' | 'upsert' | 'update';
+  /** Batch size for chunked writes (default: 100) */
+  batch?: number;
+  /** Columns for upsert conflict detection */
+  conflictColumns?: string[];
+  /** WHERE clause for updates (with $1, $2, ... params) */
+  where?: string;
+}
+
+/**
+ * Result returned by database sink operations.
+ */
+export interface DatabaseSinkResult {
+  /** Number of rows affected */
+  rowsAffected: number;
+  /** Number of batches executed */
+  batches: number;
+}
+
+// ============================================================================
+// File Configuration Types
+// ============================================================================
+
 /**
  * File format for reading/writing.
  */

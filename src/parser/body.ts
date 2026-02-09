@@ -389,15 +389,15 @@ function parseSourceNode(
   loc: SourceLocation
 ): NodeResult {
   const sourceType = String(attrs.type || 'http');
-  if (sourceType !== 'http' && sourceType !== 'file') {
+  if (sourceType !== 'http' && sourceType !== 'file' && sourceType !== 'database') {
     return {
       success: false,
       errors: [
         createError(
           'VALID_INVALID_FIELD_TYPE',
-          `Source type must be "http" or "file", got "${sourceType}"`,
+          `Source type must be "http", "file", or "database", got "${sourceType}"`,
           loc,
-          ['Use type="http" or type="file"']
+          ['Use type="http", type="file", or type="database"']
         ),
       ],
     };
@@ -477,15 +477,15 @@ function parseSinkNode(
   loc: SourceLocation
 ): NodeResult {
   const sinkType = String(attrs.type || 'http');
-  if (sinkType !== 'http' && sinkType !== 'file') {
+  if (sinkType !== 'http' && sinkType !== 'file' && sinkType !== 'database') {
     return {
       success: false,
       errors: [
         createError(
           'VALID_INVALID_FIELD_TYPE',
-          `Sink type must be "http" or "file", got "${sinkType}"`,
+          `Sink type must be "http", "file", or "database", got "${sinkType}"`,
           loc,
-          ['Use type="http" or type="file"']
+          ['Use type="http", type="file", or type="database"']
         ),
       ],
     };

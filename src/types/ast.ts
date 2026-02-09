@@ -122,7 +122,7 @@ export interface BaseNode {
  */
 export interface SourceNode extends BaseNode {
   type: 'source';
-  sourceType: 'http' | 'file';
+  sourceType: 'http' | 'file' | 'database';
   config: Record<string, unknown>;
 }
 
@@ -140,7 +140,7 @@ export interface TransformNode extends BaseNode {
  */
 export interface SinkNode extends BaseNode {
   type: 'sink';
-  sinkType: 'http' | 'file';
+  sinkType: 'http' | 'file' | 'database';
   config: Record<string, unknown>;
 }
 

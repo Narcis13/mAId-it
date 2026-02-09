@@ -16,13 +16,13 @@
 | 3 | Expression Hardening | done | 6/6 | 2026-02-09 |
 | 4 | Temporal Primitives | done | 5/5 | 2026-02-09 |
 | 5 | Execution Fixes | done | 5/5 | 2026-02-09 |
-| 6 | Database Runtime | pending | 0/4 | — |
+| 6 | Database Runtime | done | 4/4 | 2026-02-09 |
 | 7 | Advanced Control Flow | pending | 0/5 | — |
 | 8 | New Sink/Source Types | pending | 0/4 | — |
 | 9 | Composition & CLI | pending | 0/4 | — |
 | 10 | Self-Evolution | pending | 0/4 | — |
 
-**Overall:** 29/50 items complete
+**Overall:** 33/50 items complete
 
 ---
 
@@ -282,28 +282,28 @@ Batch 10 (Self-Evolution) ───────── Needs all above ──┘
 
 ### Items
 
-- [ ] **6.1 Database connection manager** (medium)
+- [x] **6.1 Database connection manager** (medium)
   - File: `src/runtimes/database/connection.ts` (new)
   - Parse connection URLs: `postgres://...`, `sqlite:///path`
   - Use `Bun.sql` for Postgres, `bun:sqlite` for SQLite
   - Connection lifecycle: create, health check, close
   - Store as reusable across source/sink in same workflow
 
-- [ ] **6.2 Database source runtime** (medium)
+- [x] **6.2 Database source runtime** (medium)
   - File: `src/runtimes/database/source.ts` (new)
   - Config: `connection` (URL or secret ref), `query` (SQL), `params` (optional)
   - Parameterized queries only (prevent SQL injection)
   - Return: Array of row objects
   - Register as `database:source`
 
-- [ ] **6.3 Database sink runtime** (medium)
+- [x] **6.3 Database sink runtime** (medium)
   - File: `src/runtimes/database/sink.ts` (new)
   - Config: `connection`, `operation` (insert/upsert/update), `table`, `batch` size
   - Parameterized INSERT/UPDATE statements
   - Batch support: chunk input array, execute in batches
   - Register as `database:sink`
 
-- [ ] **6.4 Database parser + validator support** (low)
+- [x] **6.4 Database parser + validator support** (low)
   - File: `src/parser/body.ts`, `src/validator/structural.ts`
   - Add `database` to allowed source/sink types
   - Validate required fields: `connection`, `query` (source) or `table` (sink)
@@ -470,6 +470,13 @@ Batch 10 (Self-Evolution) ───────── Needs all above ──┘
 ## Session Log
 
 *Updated after each session. Newest first.*
+
+### Session 2026-02-09 — Batch 6: Database Runtime
+**Duration:** ~8m
+**Items completed:** 6.1, 6.2, 6.3, 6.4
+**Items deferred:** none
+**Learnings:** Bun's unified `SQL` class from `"bun"` handles both Postgres and SQLite via connection URL detection. The `.unsafe(query, params)` method enables dynamic SQL execution with parameterized queries — essential for workflow-defined SQL strings. ExecutionState's `nodeResults` is a `Map`, not a plain object — test helpers must match this. The structural validator was missing switch cases for phase/context/set/delay/timeout node types added in Batch 2 — fixed the exhaustiveness check.
+**Next:** Batch 7 (Advanced Control Flow) or Batch 8/9 (all independent)
 
 ### Session 2026-02-09 — Batch 5: Execution Fixes
 **Duration:** ~8m

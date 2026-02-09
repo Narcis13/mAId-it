@@ -25,6 +25,7 @@ export {
   FileError,
   TimeoutError,
   PathTraversalError,
+  DatabaseError,
 } from './errors.ts';
 
 export type { RuntimeErrorCode } from './errors.ts';
@@ -57,6 +58,9 @@ import './checkpoint/index.ts';
 
 // Side-effect import: auto-registers Temporal runtimes
 import './temporal/index.ts';
+
+// Side-effect import: auto-registers Database runtimes
+import './database/index.ts';
 
 // Re-export HTTP runtimes for convenience
 export { httpSourceRuntime, httpSinkRuntime } from './http/index.ts';
@@ -116,3 +120,10 @@ export { delayRuntime, timeoutRuntime, parseDuration } from './temporal/index.ts
 
 // Re-export Temporal types
 export type { DelayConfig, TimeoutConfig, TimeoutResult } from './temporal/index.ts';
+
+// Re-export Database runtimes for convenience
+export { databaseSourceRuntime, databaseSinkRuntime, createDatabaseConnection, parseDatabaseType } from './database/index.ts';
+
+// Re-export Database types
+export type { DatabaseSourceConfig, DatabaseSinkConfig, DatabaseSinkResult } from './types.ts';
+export type { DatabaseConnection } from './database/index.ts';

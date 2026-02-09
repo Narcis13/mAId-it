@@ -16,7 +16,8 @@ export type RuntimeErrorCode =
   | 'RUNTIME_FILE_NOT_FOUND'
   | 'RUNTIME_FILE_WRITE_ERROR'
   | 'RUNTIME_PATH_TRAVERSAL'
-  | 'RUNTIME_TIMEOUT';
+  | 'RUNTIME_TIMEOUT'
+  | 'RUNTIME_DATABASE_ERROR';
 
 // ============================================================================
 // HTTP Error
@@ -133,6 +134,30 @@ export class TimeoutError extends Error {
  * throw new PathTraversalError('Path traversal not allowed: ../../../etc/passwd');
  * ```
  */
+/**
+ * Error thrown when database operations fail.
+ */
+export class DatabaseError extends Error {
+  /** Error code for categorization */
+  readonly code: RuntimeErrorCode = 'RUNTIME_DATABASE_ERROR';
+
+  constructor(
+    message: string,
+    /** The query that caused the error (sanitized) */
+    public readonly query?: string,
+    /** Original database error */
+    public readonly cause?: Error
+  ) {
+    super(message);
+    this.name = 'DatabaseError';
+    Object.setPrototypeOf(this, DatabaseError.prototype);
+  }
+}
+
+// ============================================================================
+// Path Traversal Error
+// ============================================================================
+
 export class PathTraversalError extends Error {
   /** Error code for categorization */
   readonly code: RuntimeErrorCode = 'RUNTIME_PATH_TRAVERSAL';

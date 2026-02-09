@@ -160,6 +160,13 @@ function validateNode(node: NodeAST): ValidationError[] {
     case 'checkpoint':
       errors.push(...validateCheckpointNode(node));
       break;
+    case 'phase':
+    case 'context':
+    case 'set':
+    case 'delay':
+    case 'timeout':
+      // These node types are validated at parse time
+      break;
     default:
       // TypeScript exhaustiveness check - this should never happen
       const _exhaustiveCheck: never = node;
@@ -181,7 +188,7 @@ function validateNode(node: NodeAST): ValidationError[] {
 function validateSourceNode(node: SourceNode): ValidationError[] {
   const errors: ValidationError[] = [];
 
-  const validSourceTypes = ['http', 'file'];
+  const validSourceTypes = ['http', 'file', 'database'];
   if (!validSourceTypes.includes(node.sourceType)) {
     errors.push(
       createError(
@@ -191,6 +198,30 @@ function validateSourceNode(node: SourceNode): ValidationError[] {
         [`Valid source types: ${validSourceTypes.join(', ')}`]
       )
     );
+  }
+
+  // Database sources require connection and query
+  if (node.sourceType === 'database') {
+    if (!node.config.connection) {
+      errors.push(
+        createError(
+          'VALID_MISSING_REQUIRED_FIELD',
+          `Database source "${node.id}" requires a "connection" attribute`,
+          node.loc,
+          ['Add connection="sqlite:///path/to/db" or connection="postgres://..."']
+        )
+      );
+    }
+    if (!node.config.query) {
+      errors.push(
+        createError(
+          'VALID_MISSING_REQUIRED_FIELD',
+          `Database source "${node.id}" requires a "query" attribute`,
+          node.loc,
+          ['Add query="SELECT * FROM table WHERE col = $1"']
+        )
+      );
+    }
   }
 
   return errors;
@@ -235,7 +266,7 @@ function validateTransformNode(node: TransformNode): ValidationError[] {
 function validateSinkNode(node: SinkNode): ValidationError[] {
   const errors: ValidationError[] = [];
 
-  const validSinkTypes = ['http', 'file'];
+  const validSinkTypes = ['http', 'file', 'database'];
   if (!validSinkTypes.includes(node.sinkType)) {
     errors.push(
       createError(
@@ -245,6 +276,30 @@ function validateSinkNode(node: SinkNode): ValidationError[] {
         [`Valid sink types: ${validSinkTypes.join(', ')}`]
       )
     );
+  }
+
+  // Database sinks require connection and table
+  if (node.sinkType === 'database') {
+    if (!node.config.connection) {
+      errors.push(
+        createError(
+          'VALID_MISSING_REQUIRED_FIELD',
+          `Database sink "${node.id}" requires a "connection" attribute`,
+          node.loc,
+          ['Add connection="sqlite:///path/to/db" or connection="postgres://..."']
+        )
+      );
+    }
+    if (!node.config.table) {
+      errors.push(
+        createError(
+          'VALID_MISSING_REQUIRED_FIELD',
+          `Database sink "${node.id}" requires a "table" attribute`,
+          node.loc,
+          ['Add table="my_table" to specify the target table']
+        )
+      );
+    }
   }
 
   // Sinks should have input

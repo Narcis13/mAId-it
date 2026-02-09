@@ -512,6 +512,164 @@ The executor already supports `RetryConfig` with `maxRetries`, `backoffBase`, `t
 | File formats | 2/5 | 5 | 40% |
 | Type system features | 3/8 | 8 | 38% |
 
-**Overall estimated spec coverage: ~40-45%**
+**Overall estimated spec coverage: ~40-45%** *(as of initial audit — see Section 8 for post-batch updates)*
 
 The implementation provides a solid, working foundation for basic workflows (HTTP source -> transform -> file/HTTP sink) with good expression evaluation, scheduling, retry logic, and state persistence. The main gaps are in advanced features: temporal primitives (0%), error handling patterns (20%), database/queue/email integrations, workflow composition, and the type system. The expression engine is the most complete subsystem at ~90% coverage.
+
+---
+
+## 8. Stress Test Agent Swarm Findings (Post-Batch 1–10)
+
+*Discovered February 2026 via 4-agent codebase analysis swarm + 8 stress test `.flow.md` files (~134 nodes total). Many items from Sections 1–6 above have been resolved by batches 2–10. This section captures **new** findings that are NOT covered above.*
+
+### 8.1 Implementation Status Updates
+
+Since the original audit, batches 2–10 have implemented many previously-missing features:
+
+| Previously Missing | Now Status | Batch |
+|---|---|---|
+| `<phase>` grouping | IMPLEMENTED (parser + runtime) | 2 |
+| `<context>` element | IMPLEMENTED (parser + runtime) | 2 |
+| `<set>` variable assignment | IMPLEMENTED (parser + runtime) | 2 |
+| `<delay>` temporal primitive | IMPLEMENTED (parser + runtime) | 2 |
+| `<timeout>` wrapper | IMPLEMENTED (parser + runtime) | 2 |
+| `<include>` workflow composition | IMPLEMENTED (parser + runtime) | 9 |
+| `<call>` workflow invocation | IMPLEMENTED (parser + runtime) | 9 |
+| `<on-error>` per-node error handling | IMPLEMENTED (parser) | 2 |
+| `<source type="database">` | IMPLEMENTED | 6 |
+| `<sink type="database">` | IMPLEMENTED | 6 |
+| `<sink type="email">` | IMPLEMENTED (runtime only — parser blocks it) | 8 |
+| `<transform type="reduce">` | IMPLEMENTED (runtime only — parser blocks it) | 7 |
+| Parallel `wait="any"` / `wait="n(N)"` | IMPLEMENTED | 7 |
+| Parallel `merge="concat"` / `merge="object"` | IMPLEMENTED | 7 |
+| Checkpoint actions with goto | IMPLEMENTED | 7 |
+| Checkpoint conditional | IMPLEMENTED | 7 |
+| OAuth2 authentication | IMPLEMENTED | 8 |
+| CSV/YAML file formats | IMPLEMENTED | 8 |
+| HTTP PUT/DELETE methods | IMPLEMENTED | 8 |
+| `flowscript inspect` command | IMPLEMENTED | 9 |
+| `flowscript test` command | IMPLEMENTED | 9 |
+| Evolution/metrics tracking | IMPLEMENTED | 10 |
+
+### 8.2 CRITICAL — Executor Gaps (Silent Failures)
+
+These are the most dangerous bugs: they cause **silent data loss** with no errors.
+
+**8.2.1 if/branch/while Body Nodes Never Execute** ⚠️
+- **Files:** `src/execution/executor.ts` lines 316–360, `src/runtimes/control/if.ts`, `src/runtimes/control/branch.ts`, `src/runtimes/control/while.ts`
+- **Root cause:** The executor's result-handling switch only checks for `isParallelResult`, `isForeachResult`, `isLoopResult`, `isTimeoutResult`. There are **NO handlers** for `IfResult`, `BranchResult`, or `WhileResult`.
+- **What happens:** The runtime evaluates the condition and returns a result object containing `bodyNodeIds: string[]` (the IDs of nodes in the matching branch). The executor stores this metadata object as the node's output and moves on. The body nodes are **never scheduled or executed**.
+- **Impact:** Any workflow using `<if>`, `<branch>`, or `<while>` will silently skip the body. Downstream nodes receive the `IfResult`/`BranchResult`/`WhileResult` metadata object instead of actual computed data.
+- **Design pattern difference:** `LoopResult` works because it carries `bodyNodes: NodeAST[]` (actual AST nodes). `ParallelResult` works because it carries `branches: NodeAST[][]`. The broken runtimes only carry `bodyNodeIds: string[]` — and those IDs aren't in `plan.nodes` since they're nested children.
+- **Fix:** Add `isIfResult`, `isBranchResult`, `isWhileResult` handlers to the executor that extract body nodes from the AST (like `handleLoopResult` does) and schedule them for execution.
+
+**8.2.2 GotoSignal Thrown but Never Caught** ⚠️
+- **File:** `src/runtimes/control/goto.ts`, `src/execution/executor.ts`
+- **Root cause:** The `goto` runtime throws a `GotoSignal` (custom Error subclass) with a `targetNodeId`. The executor has no try/catch for this signal type.
+- **What happens:** The GotoSignal propagates up as an unhandled exception, crashing the workflow.
+- **Impact:** Any workflow using checkpoint action routing with `goto` will crash.
+- **Fix:** Add GotoSignal catch in the executor's wave execution loop. On catch, skip remaining wave nodes and inject the target node into the next wave.
+
+**8.2.3 Parser Blocks Registered Runtimes** ⚠️
+- **Files:** `src/parser/body.ts` line 448, `src/types/ast.ts` line 152
+- **Root cause:** The parser enforces strict type whitelists that were never updated as new runtimes were added in later batches.
+- **Affected:**
+  - `<transform type="reduce">` — parser only allows `['ai', 'template', 'map', 'filter']`, AST type is `'ai' | 'template' | 'map' | 'filter'`
+  - `<sink type="email">` — parser only allows `['http', 'file', 'database']`, AST type is `'http' | 'file' | 'database'`
+- **Impact:** Workflows using reduce transforms or email sinks fail at parse time despite fully working runtimes being registered.
+- **Fix:** Add `'reduce'` to `TransformNode.transformType` union and parser whitelist. Add `'email'` to `SinkNode.sinkType` union and parser whitelist.
+
+### 8.3 HIGH — Execution & Validation Gaps
+
+**8.3.1 Foreach Body Node Lookup Failure**
+- **File:** `src/execution/executor.ts` (handleForeachResult) lines 766–773
+- **Root cause:** `ForeachResult` contains `bodyNodeIds: string[]`. The handler looks these up from the top-level `nodes` Map. But foreach body nodes are nested children — they only exist inside the `ForeachNode.body` AST array, not in `plan.nodes`.
+- **Impact:** Foreach loops execute with empty bodies (no error thrown, just silently skips).
+- **Note:** This is the same pattern as the if/branch/while gap (8.2.1) — only `LoopResult` avoids it by carrying `bodyNodes: NodeAST[]` directly.
+
+**8.3.2 Validator Skips Phase/Timeout Children**
+- **File:** `src/validator/structural.ts`
+- The structural validator traverses `workflow.nodes` but does not recurse into `PhaseNode.children` or `TimeoutNode.children`.
+- Nodes nested inside `<phase>` or `<timeout>` wrappers are never validated for required attributes, valid references, or ID uniqueness.
+
+**8.3.3 No Runtime Registration for Phase/Context/Set**
+- Phase, context, and set nodes are parsed into the AST but have no corresponding runtime in `src/runtimes/index.ts`.
+- The executor will throw "No runtime found for type: phase" when encountering these nodes.
+- **Workaround:** These nodes need special executor handling (phase = transparent wrapper, context/set = variable assignment) rather than traditional runtimes.
+
+**8.3.4 SQL Injection in Database Sink**
+- **File:** `src/runtimes/database/sink.ts`
+- If user-controlled data flows into column names or table names (via template expressions), it could be injected into SQL statements.
+- Parameterized queries only protect values, not identifiers.
+- **Fix:** Sanitize/whitelist table and column names. Use quoted identifiers.
+
+**8.3.5 BreakSignal Ignores `targetLoopId`**
+- **File:** `src/execution/executor.ts` lines 882–889
+- `isBreakSignal()` only checks `error.name === 'BreakSignal'` but ignores the `targetLoopId` property.
+- In nested loops, a break in an inner loop will also break the outer loop.
+- **Fix:** Check `error.targetLoopId` matches the current loop's ID before breaking.
+
+### 8.4 MEDIUM — Runtime & Operational Issues
+
+**8.4.1 Timeout Node Doesn't Interrupt Running Operations**
+- **File:** `src/runtimes/temporal/timeout.ts`
+- The timeout runtime sets up a timer but doesn't pass an `AbortSignal` to child node execution.
+- If a child (e.g., a slow AI call) is already in-flight when the timeout fires, it continues running.
+- The timeout only prevents *scheduling* new children after expiry — it doesn't cancel work in progress.
+
+**8.4.2 Delay Node Not Abortable**
+- **File:** `src/runtimes/temporal/delay.ts`
+- Uses `Bun.sleep()` or `setTimeout` without an AbortSignal.
+- If a workflow is cancelled during a delay, the delay continues blocking until it completes.
+
+**8.4.3 AI Runtime Doesn't Retry on 5xx Errors**
+- **File:** `src/runtimes/ai/runtime.ts`
+- The AI runtime has its own retry logic for schema validation failures, but does not retry on HTTP 5xx responses from the model provider (OpenRouter).
+- Transient server errors cause immediate failure.
+
+**8.4.4 No Database Connection Pooling**
+- **File:** `src/runtimes/database/source.ts`
+- Each database query opens a new connection and closes it after use.
+- No connection pool — high-concurrency workflows will overwhelm the database.
+
+**8.4.5 Composition Cycle Detection Not Concurrency-Safe**
+- **File:** `src/runtimes/composition/include.ts` or `call.ts`
+- Cycle detection uses a shared Set to track active workflow paths.
+- In concurrent execution (parallel branches both including workflows), the Set could have race conditions.
+
+**8.4.6 Call Runtime Strips Secrets**
+- **File:** `src/runtimes/composition/call.ts`
+- The call runtime creates an isolated execution context for the sub-workflow.
+- Secrets from the parent workflow are not passed through to the child.
+- Sub-workflows requiring API keys (e.g., for AI transforms) will fail.
+
+### 8.5 Usability Bugs Found During Stress Test Authoring
+
+**8.5.1 XML `<` in Text Content Breaks Parsing Silently**
+- The XML parser (fast-xml-parser) treats `<` in text content as tag opening.
+- Expressions like `item.score < 10` inside `<condition>` or `<template>` break parsing.
+- **Workaround:** Use `&lt;` entity or restructure as `not(item.score >= 10)`.
+- **Impact:** Users will write `<` naturally and get cryptic parse errors.
+
+**8.5.2 Hyphenated Node IDs Break Expression Evaluation**
+- Node IDs like `reviewer-1` are parsed by jsep as `reviewer` minus `1` (subtraction).
+- Any expression referencing a hyphenated ID (e.g., `{{reviewer-1.output}}`) produces a math error instead of a node reference.
+- **Workaround:** Use underscores (`reviewer_1`) or camelCase (`reviewer1`).
+- **Impact:** Hyphenated IDs are natural in XML and users will use them. No error message explains the issue.
+
+### 8.6 Stress Test Coverage Matrix
+
+8 stress test flows were created to exercise these gaps:
+
+| Flow | Nodes | Key Patterns Tested |
+|---|---|---|
+| `stress-parallel-etl` | 19 | 3-source parallel merge="concat", foreach+loop+AI, map/filter chains |
+| `stress-ai-content-factory` | 20 | Multi-model AI competition, iterative refinement loop, if/branch (exposes 8.2.1) |
+| `stress-timeout-error-handling` | 22 | timeout+fallback, wait="any" race, wait="n(2)", retry+backoff, 15+ expression functions |
+| `stress-maximum-chaos` | 40 | Every node type, 4-level nesting, 13 distinct types, if/branch/while (exposes 8.2.1) |
+| `stress-parallel-pipeline` | 23 | Deep parallel nesting, merge strategies |
+| `stress-loop-convergence` | 20 | Loop break conditions, AI convergence |
+| `stress-data-pipeline` | 24 | ETL patterns, filter chains |
+| `stress-composition-orchestrator` | 27 | include/call composition |
+
+**Total: ~195 nodes across 8 flows.** All pass `validate` but several will fail at runtime due to gaps 8.2.1–8.2.3.

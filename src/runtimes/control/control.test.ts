@@ -15,9 +15,10 @@ import { ifRuntime, type IfResult } from './if.ts';
 import { loopRuntime, type LoopResult } from './loop.ts';
 import { whileRuntime, type WhileResult } from './while.ts';
 import { foreachRuntime, type ForeachResult } from './foreach.ts';
+import { parallelRuntime, type ParallelResult } from './parallel.ts';
 import { DEFAULT_MAX_ITERATIONS } from './types.ts';
 import type { ExecutionState } from '../../execution/types.ts';
-import type { BranchNode, IfNode, LoopNode, WhileNode, ForeachNode, NodeAST } from '../../types/ast.ts';
+import type { BranchNode, IfNode, LoopNode, WhileNode, ForeachNode, ParallelNode, NodeAST } from '../../types/ast.ts';
 
 // ============================================================================
 // Test Helpers
@@ -802,5 +803,144 @@ describe('foreachRuntime', () => {
     });
 
     expect(result.collection).toEqual([]);
+  });
+});
+
+// ============================================================================
+// Parallel Runtime Tests (Items 7.1, 7.2)
+// ============================================================================
+
+/**
+ * Create a mock parallel node for testing.
+ */
+function createParallelNode(
+  branches: NodeAST[][],
+  options?: { wait?: string; merge?: string }
+): ParallelNode {
+  return {
+    id: 'test-parallel',
+    type: 'parallel',
+    loc: {
+      start: { line: 1, column: 0, offset: 0 },
+      end: { line: 1, column: 10, offset: 10 },
+    },
+    branches,
+    wait: options?.wait,
+    merge: options?.merge,
+  };
+}
+
+describe('parallelRuntime', () => {
+  test('has correct type identifier', () => {
+    expect(parallelRuntime.type).toBe('control:parallel');
+  });
+
+  test('returns branch count and branches', async () => {
+    const branches = [
+      [createTestNode({ id: 'a' })],
+      [createTestNode({ id: 'b' })],
+    ];
+    const parallelNode = createParallelNode(branches);
+
+    const result = await parallelRuntime.execute({
+      node: parallelNode as unknown as NodeAST,
+      input: undefined,
+      config: {},
+      state: createTestState(),
+    });
+
+    expect(result.branchCount).toBe(2);
+    expect(result.branches).toHaveLength(2);
+  });
+
+  test('passes through wait strategy from AST', async () => {
+    const parallelNode = createParallelNode(
+      [[createTestNode({ id: 'a' })]],
+      { wait: 'any' }
+    );
+
+    const result = await parallelRuntime.execute({
+      node: parallelNode as unknown as NodeAST,
+      input: undefined,
+      config: {},
+      state: createTestState(),
+    });
+
+    expect(result.wait).toBe('any');
+  });
+
+  test('passes through n(N) wait strategy', async () => {
+    const parallelNode = createParallelNode(
+      [[createTestNode({ id: 'a' })], [createTestNode({ id: 'b' })], [createTestNode({ id: 'c' })]],
+      { wait: 'n(2)' }
+    );
+
+    const result = await parallelRuntime.execute({
+      node: parallelNode as unknown as NodeAST,
+      input: undefined,
+      config: {},
+      state: createTestState(),
+    });
+
+    expect(result.wait).toBe('n(2)');
+  });
+
+  test('passes through merge strategy from AST', async () => {
+    const parallelNode = createParallelNode(
+      [[createTestNode({ id: 'a' })]],
+      { merge: 'concat' }
+    );
+
+    const result = await parallelRuntime.execute({
+      node: parallelNode as unknown as NodeAST,
+      input: undefined,
+      config: {},
+      state: createTestState(),
+    });
+
+    expect(result.merge).toBe('concat');
+  });
+
+  test('passes through object merge strategy', async () => {
+    const parallelNode = createParallelNode(
+      [[createTestNode({ id: 'a' })]],
+      { merge: 'object' }
+    );
+
+    const result = await parallelRuntime.execute({
+      node: parallelNode as unknown as NodeAST,
+      input: undefined,
+      config: {},
+      state: createTestState(),
+    });
+
+    expect(result.merge).toBe('object');
+  });
+
+  test('wait and merge are undefined when not specified', async () => {
+    const parallelNode = createParallelNode([[createTestNode({ id: 'a' })]]);
+
+    const result = await parallelRuntime.execute({
+      node: parallelNode as unknown as NodeAST,
+      input: undefined,
+      config: {},
+      state: createTestState(),
+    });
+
+    expect(result.wait).toBeUndefined();
+    expect(result.merge).toBeUndefined();
+  });
+
+  test('passes maxConcurrency from config', async () => {
+    const parallelNode = createParallelNode([[createTestNode({ id: 'a' })]]);
+
+    const result = await parallelRuntime.execute({
+      node: parallelNode as unknown as NodeAST,
+      input: undefined,
+      config: { maxConcurrency: 3 },
+      state: createTestState(),
+    });
+
+    expect(result.maxConcurrency).toBe(3);
   });
 });

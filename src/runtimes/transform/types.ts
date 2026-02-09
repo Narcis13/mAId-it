@@ -86,3 +86,30 @@ export interface FilterConfig {
   /** Expression that must return truthy for item to be included */
   condition: string;
 }
+
+// ============================================================================
+// Reduce Configuration
+// ============================================================================
+
+/**
+ * Configuration for reduce transform nodes.
+ *
+ * Reduces an input array to a single value by evaluating an expression
+ * for each item with `$acc` (accumulator) and `$item` in context.
+ *
+ * @example
+ * ```xml
+ * <transform type="reduce" id="sum" input="numbers">
+ *   <initial>0</initial>
+ *   <expression>$acc + $item</expression>
+ * </transform>
+ * ```
+ */
+export interface ReduceConfig {
+  /** Expression evaluated for each item with $acc and $item */
+  expression: string;
+  /** Initial accumulator value (expression, evaluated once) */
+  initial?: string;
+  /** Optional finalize expression applied to the final result */
+  finalize?: string;
+}

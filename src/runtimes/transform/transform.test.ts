@@ -8,6 +8,7 @@ import { test, expect, describe } from 'bun:test';
 import { templateRuntime } from './template.ts';
 import { mapRuntime } from './map.ts';
 import { filterRuntime } from './filter.ts';
+import { reduceRuntime } from './reduce.ts';
 import type { ExecutionState } from '../../execution/types.ts';
 import type { NodeAST } from '../../types/ast.ts';
 
@@ -445,6 +446,108 @@ describe('filterRuntime', () => {
       });
 
       expect(result).toEqual([20, 30, 40]);
+    });
+  });
+});
+
+// ============================================================================
+// Reduce Runtime Tests (Item 7.3)
+// ============================================================================
+
+describe('reduceRuntime', () => {
+  test('has correct type identifier', () => {
+    expect(reduceRuntime.type).toBe('transform:reduce');
+  });
+
+  describe('array reduction', () => {
+    test('sums numbers with initial value', async () => {
+      const result = await reduceRuntime.execute({
+        node: createTestNode(),
+        input: [1, 2, 3, 4, 5],
+        config: { expression: '$acc + $item', initial: '0' },
+        state: createTestState(),
+      });
+
+      expect(result).toBe(15);
+    });
+
+    test('concatenates strings with initial value', async () => {
+      const result = await reduceRuntime.execute({
+        node: createTestNode(),
+        input: ['a', 'b', 'c'],
+        config: { expression: 'concat($acc, $item)', initial: '""' },
+        state: createTestState(),
+      });
+
+      expect(result).toBe('abc');
+    });
+
+    test('handles $index in expression', async () => {
+      const result = await reduceRuntime.execute({
+        node: createTestNode(),
+        input: [10, 20, 30],
+        config: { expression: '$acc + $index', initial: '0' },
+        state: createTestState(),
+      });
+
+      // 0 + 0 + 1 + 2 = 3
+      expect(result).toBe(3);
+    });
+
+    test('applies finalize expression', async () => {
+      const result = await reduceRuntime.execute({
+        node: createTestNode(),
+        input: [2, 4, 6],
+        config: { expression: '$acc + $item', initial: '0', finalize: '$acc * 10' },
+        state: createTestState(),
+      });
+
+      // (2+4+6) * 10 = 120
+      expect(result).toBe(120);
+    });
+
+    test('handles single-element array', async () => {
+      const result = await reduceRuntime.execute({
+        node: createTestNode(),
+        input: [42],
+        config: { expression: '$acc + $item', initial: '0' },
+        state: createTestState(),
+      });
+
+      expect(result).toBe(42);
+    });
+
+    test('handles empty array with initial value', async () => {
+      const result = await reduceRuntime.execute({
+        node: createTestNode(),
+        input: [],
+        config: { expression: '$acc + $item', initial: '0' },
+        state: createTestState(),
+      });
+
+      expect(result).toBe(0);
+    });
+
+    test('coerces single value to array', async () => {
+      const result = await reduceRuntime.execute({
+        node: createTestNode(),
+        input: 5,
+        config: { expression: '$acc + $item', initial: '10' },
+        state: createTestState(),
+      });
+
+      expect(result).toBe(15);
+    });
+
+    test('computes max value', async () => {
+      const result = await reduceRuntime.execute({
+        node: createTestNode(),
+        input: [3, 7, 2, 9, 4],
+        config: { expression: '$item > $acc ? $item : $acc', initial: '0' },
+        state: createTestState(),
+      });
+
+      expect(result).toBe(9);
     });
   });
 });

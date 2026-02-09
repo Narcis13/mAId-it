@@ -512,72 +512,188 @@ function isParallelResult(output: unknown): output is ParallelResult {
 }
 
 /**
- * Execute parallel branches concurrently.
+ * Parse wait strategy string: 'all', 'any', or 'n(N)'.
+ * Returns { type, count } where count is only set for 'n' strategy.
+ */
+function parseWaitStrategy(wait?: string): { type: 'all' | 'any' | 'n'; count?: number } {
+  if (!wait || wait === 'all') return { type: 'all' };
+  if (wait === 'any') return { type: 'any' };
+  const match = wait.match(/^n\((\d+)\)$/);
+  if (match) return { type: 'n', count: parseInt(match[1], 10) };
+  return { type: 'all' };
+}
+
+/**
+ * Apply merge strategy to branch results.
+ */
+function applyMergeStrategy(
+  branchResults: unknown[],
+  merge?: string,
+  state?: ExecutionState
+): unknown {
+  if (!merge || merge === 'array') return branchResults;
+
+  if (merge === 'concat') {
+    // Flatten arrays from each branch
+    const flattened: unknown[] = [];
+    for (const result of branchResults) {
+      if (Array.isArray(result)) {
+        flattened.push(...result);
+      } else if (result !== undefined) {
+        flattened.push(result);
+      }
+    }
+    return flattened;
+  }
+
+  if (merge === 'object') {
+    // Merge as keyed object — expects each branch to return an object
+    const merged: Record<string, unknown> = {};
+    for (const result of branchResults) {
+      if (typeof result === 'object' && result !== null && !Array.isArray(result)) {
+        Object.assign(merged, result);
+      }
+    }
+    return merged;
+  }
+
+  // Custom merge expression: evaluate with $branches in context
+  if (state) {
+    try {
+      const mergeState: ExecutionState = {
+        ...state,
+        nodeContext: {
+          ...state.nodeContext,
+          $branches: branchResults,
+        },
+      };
+      return evaluateInContext(merge, mergeState);
+    } catch {
+      // Fallback to array on evaluation failure
+      return branchResults;
+    }
+  }
+
+  return branchResults;
+}
+
+/**
+ * Execute a single parallel branch and return its result.
+ */
+async function executeBranch(
+  branchNodes: NodeAST[],
+  branchIndex: number,
+  nodes: Map<string, NodeAST>,
+  state: ExecutionState,
+  maxConcurrency: number
+): Promise<unknown> {
+  const branchState = cloneStateForBranch(state, branchIndex);
+
+  let lastOutput: unknown = undefined;
+  for (const node of branchNodes) {
+    const nodeResult = await executeNode(node, nodes, branchState, maxConcurrency);
+    recordNodeResult(branchState, node.id, nodeResult);
+
+    if (nodeResult.status === 'failed') {
+      throw nodeResult.error ?? new Error(`Node ${node.id} failed`);
+    }
+
+    lastOutput = nodeResult.output;
+
+    // Copy results back to main state
+    state.nodeResults.set(node.id, nodeResult);
+    if (nodeResult.output !== undefined) {
+      state.nodeContext[node.id] = { output: nodeResult.output };
+    }
+  }
+
+  return lastOutput;
+}
+
+/**
+ * Execute parallel branches with configurable wait and merge strategies.
  *
- * Each branch gets an isolated state clone.
- * Results from all branches are collected.
+ * Wait strategies:
+ * - 'all' (default): Wait for all branches (Promise.all)
+ * - 'any': Return first resolved branch (Promise.any)
+ * - 'n(N)': Return first N resolved branches
  *
- * Note: Branch nodes are executed via executeNode, which has access to the
- * nodes map for nested control flow. Branch nodes are regular nodes, not
- * control flow nodes themselves (unless explicitly nested), so there's no
- * recursion risk.
+ * Merge strategies:
+ * - 'array' (default): Return array of branch outputs
+ * - 'concat': Flatten arrays from each branch
+ * - 'object': Merge branch outputs as keyed objects
+ * - expression: Evaluate with $branches in context
  */
 async function handleParallelResult(
   result: ParallelResult,
   nodes: Map<string, NodeAST>,
   state: ExecutionState,
   maxConcurrency: number
-): Promise<unknown[]> {
-  const { branches, maxConcurrency: branchLimit } = result;
+): Promise<unknown> {
+  const { branches, maxConcurrency: branchLimit, wait, merge } = result;
+  const waitStrategy = parseWaitStrategy(wait);
 
   // Use branch-specific limit if provided, otherwise global limit
   const concurrency = branchLimit ?? maxConcurrency;
   const semaphore = new Semaphore(concurrency);
-  const branchResults: unknown[] = new Array(branches.length);
-  const errors: Error[] = [];
 
-  const branchExecutions = branches.map(async (branchNodes, branchIndex) => {
+  // Wrap each branch in a semaphore-gated execution
+  const branchPromises = branches.map(async (branchNodes, branchIndex) => {
     await semaphore.acquire();
     try {
-      // Deep clone state for branch isolation
-      const branchState = cloneStateForBranch(state, branchIndex);
-
-      // Execute all nodes in this branch sequentially
-      let lastOutput: unknown = undefined;
-      for (const node of branchNodes) {
-        // Execute node with nodes map for potential nested control flow
-        const nodeResult = await executeNode(node, nodes, branchState, maxConcurrency);
-        recordNodeResult(branchState, node.id, nodeResult);
-
-        if (nodeResult.status === 'failed') {
-          throw nodeResult.error ?? new Error(`Node ${node.id} failed`);
-        }
-
-        lastOutput = nodeResult.output;
-
-        // Copy results back to main state
-        state.nodeResults.set(node.id, nodeResult);
-        if (nodeResult.output !== undefined) {
-          state.nodeContext[node.id] = { output: nodeResult.output };
-        }
-      }
-
-      branchResults[branchIndex] = lastOutput;
-    } catch (error) {
-      errors.push(error as Error);
+      return await executeBranch(branchNodes, branchIndex, nodes, state, maxConcurrency);
     } finally {
       semaphore.release();
     }
   });
 
-  await Promise.all(branchExecutions);
+  let branchResults: unknown[];
 
-  // Fail-fast: surface first error
-  if (errors.length > 0) {
-    throw errors[0];
+  if (waitStrategy.type === 'any') {
+    // Promise.any — first successful branch wins
+    const first = await Promise.any(branchPromises);
+    branchResults = [first];
+  } else if (waitStrategy.type === 'n' && waitStrategy.count !== undefined) {
+    // First N to resolve
+    const count = Math.min(waitStrategy.count, branches.length);
+    branchResults = await firstN(branchPromises, count);
+  } else {
+    // Default: wait for all
+    branchResults = await Promise.all(branchPromises);
   }
 
-  return branchResults;
+  return applyMergeStrategy(branchResults, merge, state);
+}
+
+/**
+ * Resolve the first N promises from a set.
+ * Returns results in completion order.
+ */
+function firstN<T>(promises: Promise<T>[], n: number): Promise<T[]> {
+  return new Promise((resolve, reject) => {
+    const results: T[] = [];
+    let settled = false;
+    let errorCount = 0;
+
+    for (const p of promises) {
+      p.then((value) => {
+        if (settled) return;
+        results.push(value);
+        if (results.length >= n) {
+          settled = true;
+          resolve(results);
+        }
+      }).catch((error) => {
+        if (settled) return;
+        errorCount++;
+        // If too many errors to reach N, reject
+        if (errorCount > promises.length - n) {
+          settled = true;
+          reject(error);
+        }
+      });
+    }
+  });
 }
 
 /**

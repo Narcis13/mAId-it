@@ -19,6 +19,7 @@ import type {
   ForeachNode,
   ParallelNode,
   CheckpointNode,
+  CheckpointActionDef,
   PhaseNode,
   ContextNode,
   SetNode,
@@ -859,6 +860,8 @@ function parseParallelNode(
     loc,
     branches,
     input: attrs.input ? String(attrs.input) : undefined,
+    wait: attrs.wait ? String(attrs.wait) : undefined,
+    merge: attrs.merge ? String(attrs.merge) : undefined,
   };
 
   return { success: true, node };
@@ -879,6 +882,54 @@ function parseCheckpointNode(
   const defaultAction = attrs.default === 'approve' || attrs.default === 'reject'
     ? attrs.default
     : undefined;
+  const condition = attrs.condition ? String(attrs.condition) : undefined;
+
+  // Parse <action> children for named action routing
+  const actions: CheckpointActionDef[] = [];
+  const children = entry[tagName];
+  if (Array.isArray(children)) {
+    for (const child of children) {
+      if (typeof child !== 'object' || child === null) continue;
+      const childEntry = child as ParsedXMLNode;
+      if ('action' in childEntry) {
+        const actionAttrs = (childEntry[':@'] ?? {}) as Record<string, string>;
+        const actionId = actionAttrs.id || '';
+        if (actionId) {
+          actions.push({
+            id: actionId,
+            label: actionAttrs.label || undefined,
+            goto: actionAttrs.goto || undefined,
+          });
+        }
+      }
+    }
+  } else if (typeof children === 'object' && children !== null) {
+    // Single child case
+    const childEntry = children as ParsedXMLNode;
+    if ('action' in childEntry) {
+      const actionAttrs = (childEntry[':@'] ?? {}) as Record<string, string>;
+      const actionId = actionAttrs.id || '';
+      if (actionId) {
+        actions.push({
+          id: actionId,
+          label: actionAttrs.label || undefined,
+          goto: actionAttrs.goto || undefined,
+        });
+      }
+    }
+  }
+
+  // Also check for <condition> child element
+  let conditionFromChild: string | undefined;
+  if (Array.isArray(children)) {
+    for (const child of children) {
+      if (typeof child !== 'object' || child === null) continue;
+      const childEntry = child as ParsedXMLNode;
+      if ('condition' in childEntry) {
+        conditionFromChild = String(childEntry.condition || '').trim();
+      }
+    }
+  }
 
   const node: CheckpointNode = {
     type: 'checkpoint',
@@ -888,6 +939,8 @@ function parseCheckpointNode(
     timeout,
     defaultAction,
     input: attrs.input ? String(attrs.input) : undefined,
+    actions: actions.length > 0 ? actions : undefined,
+    condition: condition || conditionFromChild || undefined,
   };
 
   return { success: true, node };

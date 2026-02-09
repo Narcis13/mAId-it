@@ -17,12 +17,12 @@
 | 4 | Temporal Primitives | done | 5/5 | 2026-02-09 |
 | 5 | Execution Fixes | done | 5/5 | 2026-02-09 |
 | 6 | Database Runtime | done | 4/4 | 2026-02-09 |
-| 7 | Advanced Control Flow | pending | 0/5 | — |
+| 7 | Advanced Control Flow | done | 5/5 | 2026-02-09 |
 | 8 | New Sink/Source Types | pending | 0/4 | — |
 | 9 | Composition & CLI | pending | 0/4 | — |
 | 10 | Self-Evolution | pending | 0/4 | — |
 
-**Overall:** 33/50 items complete
+**Overall:** 38/50 items complete
 
 ---
 
@@ -320,32 +320,32 @@ Batch 10 (Self-Evolution) ───────── Needs all above ──┘
 
 ### Items
 
-- [ ] **7.1 Parallel wait strategies** (medium)
+- [x] **7.1 Parallel wait strategies** (medium)
   - File: `src/runtimes/control/parallel.ts`, `src/execution/executor.ts`
   - Current: Always waits for all branches (`Promise.all`)
   - Add: `wait="any"` → `Promise.any`, `wait="n(2)"` → first N to resolve
   - Cancel remaining branches on early resolution (AbortController)
 
-- [ ] **7.2 Parallel merge strategies** (medium)
+- [x] **7.2 Parallel merge strategies** (medium)
   - File: `src/runtimes/control/parallel.ts`
   - Current: Returns array of branch outputs
   - Add: `merge="concat"` (flatten arrays), `merge="object"` (merge as keyed object)
   - Custom merge via expression: `merge="{{...}}"` evaluated with branch results
 
-- [ ] **7.3 Reduce transform runtime** (medium)
+- [x] **7.3 Reduce transform runtime** (medium)
   - File: `src/runtimes/transform/reduce.ts` (new)
   - Config: `initial` (starting accumulator), `expression` (reducer applied per item)
   - Iteration: For each item, evaluate expression with `$acc` and `$item` in context
   - Optional `finalize` expression applied to final result
   - Register as `transform:reduce`
 
-- [ ] **7.4 Checkpoint action routing** (medium)
+- [x] **7.4 Checkpoint action routing** (medium)
   - File: `src/runtimes/checkpoint/runtime.ts`
   - Current: Approve/reject/input only
   - Add: Named actions with `goto` routing (spec: `<action id="edit"><goto node="apply-edits"/>`)
   - Return action ID and optional input data for downstream routing
 
-- [ ] **7.5 Checkpoint conditional display** (low)
+- [x] **7.5 Checkpoint conditional display** (low)
   - File: `src/runtimes/checkpoint/runtime.ts`
   - Current: Always shows the checkpoint prompt
   - Add: `condition` attribute — evaluate expression, skip checkpoint if false
@@ -470,6 +470,13 @@ Batch 10 (Self-Evolution) ───────── Needs all above ──┘
 ## Session Log
 
 *Updated after each session. Newest first.*
+
+### Session 2026-02-09 — Batch 7: Advanced Control Flow
+**Duration:** ~8m
+**Items completed:** 7.1, 7.2, 7.3, 7.4, 7.5
+**Items deferred:** none
+**Learnings:** Parallel wait/merge strategies pass through the ParallelResult and are handled in the executor — the parallel runtime itself just returns metadata. `firstN` helper resolves the first N promises using a simple counter pattern. Checkpoint conditional display evaluates expressions via `buildEvaluationContext` — if the expression evaluates to a falsy value (including undefined for missing vars), it skips. Named checkpoint actions are parsed from `<action>` child elements with `id`, `label`, and `goto` attributes. Reduce runtime follows filter/map pattern but carries `$acc` through iterations.
+**Next:** Batch 8 (New Sink/Source Types) or Batch 9 (Composition & CLI)
 
 ### Session 2026-02-09 — Batch 6: Database Runtime
 **Duration:** ~8m

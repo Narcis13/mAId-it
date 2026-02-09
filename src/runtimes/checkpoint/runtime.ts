@@ -3,6 +3,7 @@
  *
  * Prompts user in terminal for approval, rejection, or text input.
  * Supports timeout with configurable default action.
+ * Supports named actions with goto routing and conditional display.
  *
  * In non-TTY environments (CI, automated tests), uses default action
  * immediately without prompting.
@@ -11,6 +12,7 @@
 import * as readline from 'node:readline';
 import type { NodeRuntime, ExecutionParams } from '../types.ts';
 import type { CheckpointConfig, CheckpointResult, CheckpointAction } from './types.ts';
+import { evaluate, buildEvaluationContext } from '../../expression/index.ts';
 
 /** Maximum number of invalid input attempts before using default action */
 const MAX_ATTEMPTS = 3;
@@ -22,9 +24,27 @@ export class CheckpointRuntime implements NodeRuntime<CheckpointConfig, unknown,
   readonly type = 'checkpoint';
 
   async execute(params: ExecutionParams<CheckpointConfig, unknown>): Promise<CheckpointResult> {
-    const { config } = params;
+    const { config, state } = params;
     const defaultAction = config.defaultAction ?? 'reject';
     const allowInput = config.allowInput ?? false;
+
+    // Conditional display: skip checkpoint if condition evaluates to false
+    if (config.condition) {
+      try {
+        const ctx = buildEvaluationContext(state);
+        const conditionResult = evaluate(config.condition, ctx);
+        if (!conditionResult) {
+          return {
+            action: 'approve',
+            timedOut: false,
+            respondedAt: Date.now(),
+            skipped: true,
+          };
+        }
+      } catch {
+        // If condition can't be evaluated, show the checkpoint
+      }
+    }
 
     // Non-TTY environment: use default action immediately
     if (!process.stdin.isTTY) {
@@ -35,7 +55,7 @@ export class CheckpointRuntime implements NodeRuntime<CheckpointConfig, unknown,
       };
     }
 
-    return this.promptUser(config.message, defaultAction, allowInput, config.timeout);
+    return this.promptUser(config.message, defaultAction, allowInput, config.timeout, config.actions);
   }
 
   /**
@@ -45,7 +65,8 @@ export class CheckpointRuntime implements NodeRuntime<CheckpointConfig, unknown,
     message: string,
     defaultAction: 'approve' | 'reject',
     allowInput: boolean,
-    timeout?: number
+    timeout?: number,
+    actions?: CheckpointConfig['actions']
   ): Promise<CheckpointResult> {
     const rl = readline.createInterface({
       input: process.stdin,
@@ -101,7 +122,7 @@ export class CheckpointRuntime implements NodeRuntime<CheckpointConfig, unknown,
       });
 
       // Start the prompt loop
-      this.promptLoop(rl, message, allowInput, defaultAction, 0, resolveWith);
+      this.promptLoop(rl, message, allowInput, defaultAction, 0, resolveWith, actions);
     });
   }
 
@@ -114,9 +135,15 @@ export class CheckpointRuntime implements NodeRuntime<CheckpointConfig, unknown,
     allowInput: boolean,
     defaultAction: 'approve' | 'reject',
     attempts: number,
-    resolve: (result: CheckpointResult) => void
+    resolve: (result: CheckpointResult) => void,
+    actions?: CheckpointConfig['actions']
   ): void {
-    const options = allowInput ? '[A]pprove / [R]eject / [I]nput' : '[A]pprove / [R]eject';
+    // Build options string — include named actions if present
+    let options = allowInput ? '[A]pprove / [R]eject / [I]nput' : '[A]pprove / [R]eject';
+    if (actions && actions.length > 0) {
+      const actionLabels = actions.map(a => `[${a.label || a.id}]`).join(' / ');
+      options += ` / ${actionLabels}`;
+    }
     const prompt = `\n${message}\n${options}: `;
 
     rl.question(prompt, (answer) => {
@@ -133,11 +160,28 @@ export class CheckpointRuntime implements NodeRuntime<CheckpointConfig, unknown,
           return;
         }
         console.log('Please enter a valid response.');
-        this.promptLoop(rl, message, allowInput, defaultAction, attempts + 1, resolve);
+        this.promptLoop(rl, message, allowInput, defaultAction, attempts + 1, resolve, actions);
         return;
       }
 
-      // Parse response
+      // Check for named action match first
+      if (actions && actions.length > 0) {
+        const matchedAction = actions.find(a =>
+          trimmed === a.id.toLowerCase() ||
+          trimmed === (a.label || '').toLowerCase()
+        );
+        if (matchedAction) {
+          resolve({
+            action: matchedAction.id,
+            timedOut: false,
+            respondedAt: Date.now(),
+            goto: matchedAction.goto,
+          });
+          return;
+        }
+      }
+
+      // Parse standard response
       const action = this.parseAction(trimmed, allowInput);
       if (action) {
         if (action === 'input' && allowInput) {
@@ -172,7 +216,7 @@ export class CheckpointRuntime implements NodeRuntime<CheckpointConfig, unknown,
       }
 
       console.log('Invalid response. Please try again.');
-      this.promptLoop(rl, message, allowInput, defaultAction, attempts + 1, resolve);
+      this.promptLoop(rl, message, allowInput, defaultAction, attempts + 1, resolve, actions);
     });
   }
 

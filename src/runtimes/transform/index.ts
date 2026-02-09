@@ -13,6 +13,7 @@
 import { templateRuntime } from './template.ts';
 import { mapRuntime } from './map.ts';
 import { filterRuntime } from './filter.ts';
+import { reduceRuntime } from './reduce.ts';
 import { runtimeRegistry } from '../registry.ts';
 
 // ============================================================================
@@ -23,6 +24,7 @@ import { runtimeRegistry } from '../registry.ts';
 runtimeRegistry.register(templateRuntime);
 runtimeRegistry.register(mapRuntime);
 runtimeRegistry.register(filterRuntime);
+runtimeRegistry.register(reduceRuntime);
 
 // ============================================================================
 // Exports
@@ -33,9 +35,11 @@ export type {
   TemplateConfig,
   MapConfig,
   FilterConfig,
+  ReduceConfig,
 } from './types.ts';
 
 // Export runtimes
 export { templateRuntime } from './template.ts';
 export { mapRuntime } from './map.ts';
 export { filterRuntime } from './filter.ts';
+export { reduceRuntime } from './reduce.ts';

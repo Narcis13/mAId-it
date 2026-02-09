@@ -24,6 +24,10 @@ export interface ParallelResult {
   branchCount: number;
   /** Maximum concurrent branches (undefined = unlimited) */
   maxConcurrency?: number;
+  /** Wait strategy: 'all' (default), 'any', or 'n(N)' for first N */
+  wait?: string;
+  /** Merge strategy: 'array' (default), 'concat', 'object', or expression */
+  merge?: string;
 }
 
 // ============================================================================
@@ -68,6 +72,8 @@ class ParallelRuntime implements NodeRuntime<ParallelConfig, unknown, ParallelRe
       branches: parallelNode.branches,
       branchCount: parallelNode.branches.length,
       maxConcurrency,
+      wait: parallelNode.wait,
+      merge: parallelNode.merge,
     };
   }
 }

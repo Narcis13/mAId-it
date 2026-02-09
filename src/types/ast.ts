@@ -212,6 +212,10 @@ export interface ForeachNode extends BaseNode {
 export interface ParallelNode extends BaseNode {
   type: 'parallel';
   branches: NodeAST[][];
+  /** Wait strategy: 'all' (default), 'any', or 'n(N)' for first N */
+  wait?: string;
+  /** Merge strategy: 'array' (default), 'concat', 'object', or expression */
+  merge?: string;
 }
 
 /**
@@ -222,6 +226,22 @@ export interface CheckpointNode extends BaseNode {
   prompt: string;
   timeout?: number;
   defaultAction?: 'approve' | 'reject';
+  /** Named actions with goto routing */
+  actions?: CheckpointActionDef[];
+  /** Condition expression — skip checkpoint if evaluates to false */
+  condition?: string;
+}
+
+/**
+ * Named action definition for checkpoint nodes.
+ */
+export interface CheckpointActionDef {
+  /** Action identifier */
+  id: string;
+  /** Display label */
+  label?: string;
+  /** Node ID to route to when this action is selected */
+  goto?: string;
 }
 
 // ============================================================================

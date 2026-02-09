@@ -218,4 +218,126 @@ describe('CheckpointRuntime parseAction (via type checking)', () => {
     const action: CheckpointResult['action'] = 'input';
     expect(action).toBe('input');
   });
+
+  test('CheckpointAction type includes custom named actions', () => {
+    const action: CheckpointResult['action'] = 'edit';
+    expect(action).toBe('edit');
+  });
+});
+
+// ============================================================================
+// Checkpoint Conditional Display Tests (Item 7.5)
+// ============================================================================
+
+describe('CheckpointRuntime conditional display', () => {
+  let runtime: CheckpointRuntime;
+
+  beforeEach(() => {
+    runtime = new CheckpointRuntime();
+    Object.defineProperty(process.stdin, 'isTTY', {
+      value: false,
+      writable: true,
+      configurable: true,
+    });
+  });
+
+  test('skips checkpoint when condition evaluates to false', async () => {
+    const params = createParams({
+      message: 'Review this?',
+      condition: 'word_count > 1000',
+    });
+    // Inject word_count into state's globalContext
+    params.state.globalContext = { word_count: 500 };
+
+    const result = await runtime.execute(params);
+
+    expect(result.action).toBe('approve');
+    expect(result.skipped).toBe(true);
+  });
+
+  test('shows checkpoint when condition evaluates to true', async () => {
+    const params = createParams({
+      message: 'Review this?',
+      defaultAction: 'reject',
+      condition: 'word_count > 1000',
+    });
+    params.state.globalContext = { word_count: 1500 };
+
+    const result = await runtime.execute(params);
+
+    // In non-TTY, should use default action (not skipped)
+    expect(result.action).toBe('reject');
+    expect(result.skipped).toBeUndefined();
+  });
+
+  test('shows checkpoint when condition is not specified', async () => {
+    const params = createParams({
+      message: 'Review this?',
+      defaultAction: 'approve',
+    });
+
+    const result = await runtime.execute(params);
+
+    expect(result.action).toBe('approve');
+    expect(result.skipped).toBeUndefined();
+  });
+
+  test('shows checkpoint when condition evaluation throws', async () => {
+    const params = createParams({
+      message: 'Review this?',
+      defaultAction: 'reject',
+      // Invalid expression syntax should throw during evaluation
+      condition: '===invalid===',
+    });
+
+    const result = await runtime.execute(params);
+
+    // On error, should fall through and show checkpoint
+    expect(result.action).toBe('reject');
+    expect(result.skipped).toBeUndefined();
+  });
+});
+
+// ============================================================================
+// Checkpoint Action Config Tests (Item 7.4)
+// ============================================================================
+
+describe('CheckpointRuntime action config', () => {
+  let runtime: CheckpointRuntime;
+
+  beforeEach(() => {
+    runtime = new CheckpointRuntime();
+    Object.defineProperty(process.stdin, 'isTTY', {
+      value: false,
+      writable: true,
+      configurable: true,
+    });
+  });
+
+  test('accepts actions in config without error', async () => {
+    const params = createParams({
+      message: 'Choose action',
+      defaultAction: 'approve',
+      actions: [
+        { id: 'edit', label: 'Edit', goto: 'apply-edits' },
+        { id: 'skip', label: 'Skip' },
+      ],
+    });
+
+    // In non-TTY, should use default action
+    const result = await runtime.execute(params);
+    expect(result.action).toBe('approve');
+  });
+
+  test('CheckpointResult can have goto field', () => {
+    const result: CheckpointResult = {
+      action: 'edit',
+      timedOut: false,
+      respondedAt: Date.now(),
+      goto: 'apply-edits',
+    };
+
+    expect(result.goto).toBe('apply-edits');
+    expect(result.action).toBe('edit');
+  });
 });

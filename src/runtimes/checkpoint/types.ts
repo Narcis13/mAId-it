@@ -8,7 +8,19 @@
 /**
  * User action at checkpoint.
  */
-export type CheckpointAction = 'approve' | 'reject' | 'input';
+export type CheckpointAction = 'approve' | 'reject' | 'input' | string;
+
+/**
+ * Named action definition for checkpoint config.
+ */
+export interface CheckpointActionConfig {
+  /** Action identifier */
+  id: string;
+  /** Display label */
+  label?: string;
+  /** Node ID to route to when this action is selected */
+  goto?: string;
+}
 
 /**
  * Configuration for checkpoint nodes.
@@ -22,6 +34,10 @@ export interface CheckpointConfig {
   defaultAction?: 'approve' | 'reject';
   /** Whether to allow text input (default: false) */
   allowInput?: boolean;
+  /** Named actions with goto routing */
+  actions?: CheckpointActionConfig[];
+  /** Condition expression — skip checkpoint if false */
+  condition?: string;
 }
 
 /**
@@ -36,4 +52,8 @@ export interface CheckpointResult {
   timedOut: boolean;
   /** Timestamp when user responded */
   respondedAt: number;
+  /** Whether the checkpoint was skipped due to condition */
+  skipped?: boolean;
+  /** Goto target node ID for named action routing */
+  goto?: string;
 }

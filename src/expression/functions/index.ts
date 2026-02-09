@@ -111,12 +111,26 @@ const utilityFunctions = {
     }
   },
 
-  // Hashing (simple hash for non-cryptographic use)
+  // Hashing
   /**
-   * Simple string hash (djb2 algorithm) - NOT cryptographic
+   * Hash a string. Without algorithm arg, uses djb2 (fast, non-cryptographic).
+   * With algorithm arg ("sha256", "md5", "sha512"), uses Bun.CryptoHasher.
    */
-  hash: (s: string): number => {
+  hash: (s: string, algorithm?: string): number | string => {
     const str = String(s ?? '');
+
+    if (algorithm) {
+      const algo = String(algorithm).toLowerCase();
+      try {
+        const hasher = new Bun.CryptoHasher(algo as 'sha256' | 'md5' | 'sha512' | 'sha1');
+        hasher.update(str);
+        return hasher.digest('hex');
+      } catch {
+        return 0;
+      }
+    }
+
+    // Default: djb2 (backward compatible)
     let hash = 5381;
     for (let i = 0; i < str.length; i++) {
       hash = (hash * 33) ^ str.charCodeAt(i);

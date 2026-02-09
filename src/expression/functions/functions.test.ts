@@ -242,6 +242,33 @@ describe('Time Functions', () => {
     expect(timeFunctions.add_time(null as any, { days: 1 })).toBeNull();
     expect(timeFunctions.diff(null as any, '2024-01-01', 'days')).toBeNull();
   });
+
+  test('duration parses human-readable durations', () => {
+    expect(timeFunctions.duration('5s')).toBe(5000);
+    expect(timeFunctions.duration('1m')).toBe(60000);
+    expect(timeFunctions.duration('2h')).toBe(7200000);
+    expect(timeFunctions.duration('1d')).toBe(86400000);
+    expect(timeFunctions.duration('500ms')).toBe(500);
+    expect(timeFunctions.duration('1h30m')).toBe(5400000);
+  });
+
+  test('duration parses ISO durations', () => {
+    expect(timeFunctions.duration('PT1H')).toBe(3600000);
+    expect(timeFunctions.duration('PT30S')).toBe(30000);
+    expect(timeFunctions.duration('P1D')).toBe(86400000);
+    expect(timeFunctions.duration('PT1H30M')).toBe(5400000);
+  });
+
+  test('duration handles plain numbers', () => {
+    expect(timeFunctions.duration(5000)).toBe(5000);
+    expect(timeFunctions.duration('5000')).toBe(5000);
+  });
+
+  test('duration returns null for invalid input', () => {
+    expect(timeFunctions.duration(null as any)).toBeNull();
+    expect(timeFunctions.duration('')).toBeNull();
+    expect(timeFunctions.duration('invalid')).toBeNull();
+  });
 });
 
 describe('Object Functions', () => {
@@ -368,6 +395,20 @@ describe('Type Functions', () => {
     expect(typeFunctions.if_else(false, 'yes', 'no')).toBe('no');
     expect(typeFunctions.if_else(1, 'truthy', 'falsy')).toBe('truthy');
   });
+
+  test('switch does dictionary lookup', () => {
+    const cases = { a: 1, b: 2, c: 3 };
+    expect(typeFunctions.switch('a', cases)).toBe(1);
+    expect(typeFunctions.switch('b', cases)).toBe(2);
+    expect(typeFunctions.switch('missing', cases, 0)).toBe(0);
+    expect(typeFunctions.switch('missing', cases)).toBeNull();
+  });
+
+  test('switch handles edge cases', () => {
+    expect(typeFunctions.switch('x', null, 'default')).toBe('default');
+    expect(typeFunctions.switch('x', [1, 2], 'default')).toBe('default');
+    expect(typeFunctions.switch(42, { '42': 'found' })).toBe('found');
+  });
 });
 
 describe('Utility Functions', () => {
@@ -403,11 +444,29 @@ describe('Utility Functions', () => {
     expect(utilityFunctions.match_all('cat bat rat', '\\w+at')).toEqual(['cat', 'bat', 'rat']);
   });
 
-  test('hash produces consistent results', () => {
+  test('hash produces consistent results (djb2 default)', () => {
     const hash1 = utilityFunctions.hash('test');
     const hash2 = utilityFunctions.hash('test');
     expect(hash1).toBe(hash2);
     expect(typeof hash1).toBe('number');
+  });
+
+  test('hash with sha256 algorithm', () => {
+    const h = utilityFunctions.hash('test', 'sha256');
+    expect(typeof h).toBe('string');
+    expect(h).toHaveLength(64); // sha256 hex = 64 chars
+  });
+
+  test('hash with md5 algorithm', () => {
+    const h = utilityFunctions.hash('test', 'md5');
+    expect(typeof h).toBe('string');
+    expect(h).toHaveLength(32); // md5 hex = 32 chars
+  });
+
+  test('hash with sha256 is deterministic', () => {
+    const h1 = utilityFunctions.hash('hello', 'sha256');
+    const h2 = utilityFunctions.hash('hello', 'sha256');
+    expect(h1).toBe(h2);
   });
 
   test('pretty formats JSON', () => {

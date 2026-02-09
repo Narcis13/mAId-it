@@ -5,6 +5,7 @@
 import { test, expect, describe } from 'bun:test';
 import { evaluate, evaluateNode } from './evaluator.ts';
 import { evaluateTemplate } from './index.ts';
+import { buildEvaluationContext } from './context.ts';
 import { ExpressionError } from './types.ts';
 import { parseExpression } from './parser.ts';
 
@@ -389,5 +390,23 @@ describe('evaluateTemplate', () => {
         ctx({ user: { profile: { firstName: 'John', lastName: 'Doe' } } })
       )
     ).toBe('Name: John Doe');
+  });
+});
+
+describe('$env context', () => {
+  test('buildEvaluationContext includes $env from process.env', () => {
+    const state = {
+      globalContext: {},
+      phaseContext: {},
+      nodeContext: {},
+      config: {},
+      secrets: {},
+      nodeResults: new Map(),
+    } as any;
+    const evalCtx = buildEvaluationContext(state);
+    expect(evalCtx.variables['$env']).toBeDefined();
+    expect(typeof evalCtx.variables['$env']).toBe('object');
+    // PATH should exist in any environment
+    expect((evalCtx.variables['$env'] as Record<string, unknown>)['PATH']).toBeDefined();
   });
 });

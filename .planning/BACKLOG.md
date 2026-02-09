@@ -13,7 +13,7 @@
 |-------|------|--------|-------|-------------|
 | 1 | Critical Bugfixes | done | 6/6 | 2026-02-09 |
 | 2 | Parser Expansion | done | 7/7 | 2026-02-09 |
-| 3 | Expression Hardening | pending | 0/6 | — |
+| 3 | Expression Hardening | done | 6/6 | 2026-02-09 |
 | 4 | Temporal Primitives | pending | 0/5 | — |
 | 5 | Execution Fixes | pending | 0/5 | — |
 | 6 | Database Runtime | pending | 0/4 | — |
@@ -22,7 +22,7 @@
 | 9 | Composition & CLI | pending | 0/4 | — |
 | 10 | Self-Evolution | pending | 0/4 | — |
 
-**Overall:** 13/50 items complete
+**Overall:** 19/50 items complete
 
 ---
 
@@ -154,35 +154,35 @@ Batch 10 (Self-Evolution) ───────── Needs all above ──┘
 
 ### Items
 
-- [ ] **3.1 Fix template regex for nested `}}`** (low)
+- [x] **3.1 Fix template regex for nested `}}`** (low)
   - File: `src/expression/parser.ts`
   - Bug: `/\{\{(.+?)\}\}/g` fails when expression contains `}}`
   - Fix: Use balanced bracket matching or escape-aware regex
   - Also add: escape mechanism for literal `{{` (e.g., `\{\{` or `{{{`)
 
-- [ ] **3.2 Add expression syntax validation pass** (medium)
+- [x] **3.2 Add expression syntax validation pass** (medium)
   - File: `src/validator/expressions.ts` (new), `src/validator/index.ts`
   - Parse (don't evaluate) all template expressions at validation time
   - Catches syntax errors before runtime (currently only caught during execution)
   - Adds new validation pass after structural, before refs
 
-- [ ] **3.3 Add `$env.VAR` environment variable access** (low)
+- [x] **3.3 Add `$env.VAR` environment variable access** (low)
   - File: `src/expression/context.ts`
   - Add `$env` to EvalContext using `process.env` (or `Bun.env`)
   - Security: Consider allowlisting or prefixing for sensitive vars
 
-- [ ] **3.4 Add `duration()` function** (low)
+- [x] **3.4 Add `duration()` function** (low)
   - File: `src/expression/functions/time.ts`
   - Parse ISO durations ("P1D", "PT1H30M") and human durations ("5s", "1m", "2h")
   - Return milliseconds or Luxon Duration object
   - Needed by temporal primitives in Batch 4
 
-- [ ] **3.5 Add `switch()` function** (low)
+- [x] **3.5 Add `switch()` function** (low)
   - File: `src/expression/functions/type.ts`
   - `switch(val, { "a": 1, "b": 2 }, defaultVal)` — dictionary lookup with default
   - Simple object key lookup, no pattern matching needed
 
-- [ ] **3.6 Improve `hash()` with sha256/md5** (low)
+- [x] **3.6 Improve `hash()` with sha256/md5** (low)
   - File: `src/expression/functions/string.ts`
   - Current: Only djb2 hash
   - Add: `hash(s, "sha256")`, `hash(s, "md5")` using `Bun.CryptoHasher`
@@ -470,6 +470,13 @@ Batch 10 (Self-Evolution) ───────── Needs all above ──┘
 ## Session Log
 
 *Updated after each session. Newest first.*
+
+### Session 2026-02-09 — Batch 3: Expression Hardening
+**Duration:** ~8m
+**Items completed:** 3.1, 3.2, 3.3, 3.4, 3.5, 3.6
+**Items deferred:** none
+**Learnings:** Character-walking parser for template extraction handles `}}` inside string literals and `\{{` escapes. `parseDurationToMs` needs careful regex to distinguish `m` (minutes) from `ms` (milliseconds) — negative lookahead `(?!s)` solves it. `Bun.CryptoHasher` accepts algorithm string in constructor.
+**Next:** Batch 4 (Temporal) or Batch 5/6/7/8 (all independent)
 
 ### Session 2026-02-09 — Batch 2: Parser Expansion
 **Duration:** ~8m

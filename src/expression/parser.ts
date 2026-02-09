@@ -49,43 +49,141 @@ jsep.addBinaryOp('??', 1);
  */
 export function extractTemplateSegments(template: string): TemplateSegment[] {
   const segments: TemplateSegment[] = [];
-  const regex = /\{\{(.+?)\}\}/g;
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
+  let i = 0;
+  let textStart = 0;
 
-  while ((match = regex.exec(template)) !== null) {
-    // Add text segment before the expression (if any)
-    if (match.index > lastIndex) {
+  while (i < template.length) {
+    // Check for escaped \{{ — produces literal {{
+    if (
+      template[i] === '\\' &&
+      i + 2 < template.length &&
+      template[i + 1] === '{' &&
+      template[i + 2] === '{'
+    ) {
+      // Emit text accumulated before the backslash
+      if (i > textStart) {
+        segments.push({
+          type: 'text',
+          value: template.slice(textStart, i),
+          start: textStart,
+          end: i,
+        });
+      }
+      // Emit literal {{ as text (consuming \{{ = 3 chars)
       segments.push({
         type: 'text',
-        value: template.slice(lastIndex, match.index),
-        start: lastIndex,
-        end: match.index,
+        value: '{{',
+        start: i,
+        end: i + 3,
       });
+      i += 3;
+      textStart = i;
+      continue;
     }
 
-    // Add expression segment
-    segments.push({
-      type: 'expression',
-      value: match[1]!.trim(),
-      start: match.index,
-      end: match.index + match[0].length,
-    });
+    // Check for {{ expression opening
+    if (template[i] === '{' && i + 1 < template.length && template[i + 1] === '{') {
+      // Emit text before this
+      if (i > textStart) {
+        segments.push({
+          type: 'text',
+          value: template.slice(textStart, i),
+          start: textStart,
+          end: i,
+        });
+      }
 
-    lastIndex = match.index + match[0].length;
+      const exprStart = i;
+      i += 2; // Skip {{
+
+      // Find matching }} while respecting string literals
+      const exprEnd = findExpressionEnd(template, i);
+      if (exprEnd === -1) {
+        // No matching }} — treat rest as text
+        segments.push({
+          type: 'text',
+          value: template.slice(exprStart),
+          start: exprStart,
+          end: template.length,
+        });
+        return segments;
+      }
+
+      segments.push({
+        type: 'expression',
+        value: template.slice(i, exprEnd).trim(),
+        start: exprStart,
+        end: exprEnd + 2, // +2 for }}
+      });
+      i = exprEnd + 2;
+      textStart = i;
+      continue;
+    }
+
+    i++;
   }
 
-  // Add remaining text segment (if any)
-  if (lastIndex < template.length) {
+  // Remaining text
+  if (textStart < template.length) {
     segments.push({
       type: 'text',
-      value: template.slice(lastIndex),
-      start: lastIndex,
+      value: template.slice(textStart),
+      start: textStart,
       end: template.length,
     });
   }
 
   return segments;
+}
+
+/**
+ * Find the position of the closing }} for a template expression,
+ * skipping over string literals so that }} inside quotes is ignored.
+ * Returns the index of the first } of }}, or -1 if not found.
+ */
+function findExpressionEnd(template: string, start: number): number {
+  let i = start;
+
+  while (i < template.length) {
+    const ch = template[i]!;
+
+    // Found closing }}
+    if (ch === '}' && i + 1 < template.length && template[i + 1] === '}') {
+      return i;
+    }
+
+    // Skip string literals (so }} inside strings doesn't close the expression)
+    if (ch === '"' || ch === "'") {
+      i = skipStringLiteral(template, i);
+      continue;
+    }
+
+    i++;
+  }
+
+  return -1;
+}
+
+/**
+ * Skip past a string literal starting at the given quote character.
+ * Handles backslash escapes inside the string.
+ */
+function skipStringLiteral(template: string, start: number): number {
+  const quote = template[start];
+  let i = start + 1;
+
+  while (i < template.length) {
+    if (template[i] === '\\') {
+      i += 2; // Skip escaped character
+      continue;
+    }
+    if (template[i] === quote) {
+      return i + 1;
+    }
+    i++;
+  }
+
+  return i; // Unterminated string — return end
 }
 
 // ============================================================================

@@ -7,6 +7,7 @@
 
 import type { WorkflowAST, ValidationResult, ValidationError } from '../types';
 import { validateStructural } from './structural';
+import { validateExpressions } from './expressions';
 import { validateReferences } from './references';
 import { detectCycles, getExecutionOrder } from './cycles';
 import { validateTypeCompatibility } from './types';
@@ -47,6 +48,10 @@ export function validate(ast: WorkflowAST): ValidationResult {
   // Pass 1: Structural validation
   const structuralResults = validateStructural(ast);
   categorizeErrors(structuralResults, errors, warnings);
+
+  // Pass 1.5: Expression syntax validation (catches bad expressions before runtime)
+  const expressionResults = validateExpressions(ast);
+  categorizeErrors(expressionResults, errors, warnings);
 
   // Pass 2: Reference validation
   const referenceResults = validateReferences(ast);
@@ -124,6 +129,7 @@ export function validateWithOrder(ast: WorkflowAST): {
 
 // Re-export individual validators for advanced usage
 export { validateStructural } from './structural';
+export { validateExpressions } from './expressions';
 export { validateReferences } from './references';
 export { detectCycles, getExecutionOrder } from './cycles';
 export { validateTypeCompatibility } from './types';

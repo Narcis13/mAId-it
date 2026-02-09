@@ -41,6 +41,7 @@ export function buildEvaluationContext(state: ExecutionState): EvalContext {
     ...state.phaseContext,
     ...state.nodeContext,
   };
+  variables['$env'] = process.env;
 
   // Add node outputs as direct references (e.g., fetch.output -> { output: {...} })
   const outputs = getNodeOutputs(state);

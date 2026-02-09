@@ -7,6 +7,42 @@
 
 import { DateTime, Duration, type DurationUnit, type DateTimeUnit } from 'luxon';
 
+/**
+ * Parse a human-readable duration string into milliseconds.
+ * Supports: "500ms", "5s", "1m", "2h", "1d", combined "1h30m",
+ * ISO durations ("PT1H30M", "P1D"), and plain numbers (treated as ms).
+ */
+function parseDurationToMs(input: string | number): number | null {
+  if (typeof input === 'number') return input;
+  if (!input || typeof input !== 'string') return null;
+
+  const s = input.trim();
+
+  // Plain number string → milliseconds
+  if (/^\d+$/.test(s)) return Number(s);
+
+  // ISO 8601 duration (starts with P)
+  if (s.startsWith('P') || s.startsWith('p')) {
+    const dur = Duration.fromISO(s);
+    return dur.isValid ? dur.toMillis() : null;
+  }
+
+  // Human-readable: "1h30m5s", "500ms", "2h", "5s" etc.
+  const humanRegex = /(?:(\d+(?:\.\d+)?)d)?(?:(\d+(?:\.\d+)?)h)?(?:(\d+(?:\.\d+)?)m(?!s))?(?:(\d+(?:\.\d+)?)s)?(?:(\d+(?:\.\d+)?)ms)?/;
+  const match = s.match(humanRegex);
+  if (!match || match[0] === '') return null;
+
+  const [, d, h, m, sec, ms] = match;
+  let total = 0;
+  if (d) total += parseFloat(d) * 86400000;
+  if (h) total += parseFloat(h) * 3600000;
+  if (m) total += parseFloat(m) * 60000;
+  if (sec) total += parseFloat(sec) * 1000;
+  if (ms) total += parseFloat(ms);
+
+  return total > 0 ? total : null;
+}
+
 export const timeFunctions = {
   /**
    * Get current datetime as ISO string
@@ -156,4 +192,12 @@ export const timeFunctions = {
     const dt = DateTime.fromISO(isoDate);
     return dt.isValid ? dt.toRelative() : null;
   },
+
+  /**
+   * Parse a duration string into milliseconds.
+   * Accepts ISO ("PT1H30M", "P1D"), human ("5s", "1m", "2h", "1h30m"),
+   * or plain numbers (treated as ms).
+   * Returns null for invalid input.
+   */
+  duration: (input: string | number): number | null => parseDurationToMs(input),
 };

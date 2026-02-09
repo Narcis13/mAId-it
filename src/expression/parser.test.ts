@@ -73,6 +73,44 @@ describe('extractTemplateSegments', () => {
       { type: 'expression', value: 'name', start: 6, end: 14 },
     ]);
   });
+
+  test('handles }} inside string literal in expression', () => {
+    const segments = extractTemplateSegments('{{obj["a}}b"]}}');
+    expect(segments).toHaveLength(1);
+    expect(segments[0]!.type).toBe('expression');
+    expect(segments[0]!.value).toBe('obj["a}}b"]');
+  });
+
+  test('handles escaped \\{{ as literal text', () => {
+    const segments = extractTemplateSegments('\\{{not expr}}');
+    // \{{ produces literal "{{", then "not expr}}" is just text
+    expect(segments.some(s => s.type === 'expression')).toBe(false);
+    const text = segments.map(s => s.value).join('');
+    expect(text).toBe('{{not expr}}');
+  });
+
+  test('escaped \\{{ followed by real expression', () => {
+    const segments = extractTemplateSegments('\\{{literal}} and {{real}}');
+    const exprs = segments.filter(s => s.type === 'expression');
+    expect(exprs).toHaveLength(1);
+    expect(exprs[0]!.value).toBe('real');
+    const text = segments.filter(s => s.type === 'text').map(s => s.value).join('');
+    expect(text).toContain('{{literal}} and ');
+  });
+
+  test('unmatched {{ treated as text', () => {
+    const segments = extractTemplateSegments('{{unclosed');
+    expect(segments).toHaveLength(1);
+    expect(segments[0]!.type).toBe('text');
+    expect(segments[0]!.value).toBe('{{unclosed');
+  });
+
+  test('handles single-quoted strings with }} inside', () => {
+    const segments = extractTemplateSegments("{{obj['a}}b']}}");
+    expect(segments).toHaveLength(1);
+    expect(segments[0]!.type).toBe('expression');
+    expect(segments[0]!.value).toBe("obj['a}}b']");
+  });
 });
 
 describe('parseExpression', () => {

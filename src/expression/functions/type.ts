@@ -136,4 +136,18 @@ export const typeFunctions = {
    * Check if value is falsy
    */
   is_falsy: (val: unknown): boolean => !val,
+
+  /**
+   * Dictionary lookup with default.
+   * switch(val, cases, defaultVal) — looks up val in cases object, returns defaultVal if not found.
+   * Example: switch("a", {"a": 1, "b": 2}, 0) → 1
+   */
+  switch: (val: unknown, cases: unknown, defaultVal?: unknown): unknown => {
+    if (cases === null || cases === undefined || typeof cases !== 'object' || Array.isArray(cases)) {
+      return defaultVal ?? null;
+    }
+    const key = String(val);
+    const obj = cases as Record<string, unknown>;
+    return key in obj ? obj[key] : (defaultVal ?? null);
+  },
 };

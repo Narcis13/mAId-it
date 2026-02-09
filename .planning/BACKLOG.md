@@ -11,7 +11,7 @@
 
 | Batch | Name | Status | Items | Session Date |
 |-------|------|--------|-------|-------------|
-| 1 | Critical Bugfixes | pending | 0/6 | — |
+| 1 | Critical Bugfixes | done | 6/6 | 2026-02-09 |
 | 2 | Parser Expansion | pending | 0/7 | — |
 | 3 | Expression Hardening | pending | 0/6 | — |
 | 4 | Temporal Primitives | pending | 0/5 | — |
@@ -22,7 +22,7 @@
 | 9 | Composition & CLI | pending | 0/4 | — |
 | 10 | Self-Evolution | pending | 0/4 | — |
 
-**Overall:** 0/50 items complete
+**Overall:** 6/50 items complete
 
 ---
 
@@ -56,37 +56,37 @@ Batch 10 (Self-Evolution) ───────── Needs all above ──┘
 
 ### Items
 
-- [ ] **1.1 Fix `concat` function name collision** (low)
+- [x] **1.1 Fix `concat` function name collision** (low)
   - File: `src/expression/functions/index.ts`
   - Bug: `arrayFunctions.concat` overwrites `stringFunctions.concat` in flat namespace
   - Fix: Rename array version to `array_concat` or use explicit key assignment
   - Test: Verify `concat("a", "b")` returns `"ab"` and array concat still works
 
-- [ ] **1.2 Fix Error serialization in persistence** (low)
+- [x] **1.2 Fix Error serialization in persistence** (low)
   - File: `src/execution/persistence.ts`
   - Bug: `JSON.stringify()` serializes Error objects as `{}`, losing message/stack
   - Fix: Custom replacer that extracts `{ name, message, stack, code }` from Error instances
   - Test: Save state with error, load it, verify error fields preserved
 
-- [ ] **1.3 Fix nodeContext mutation in fallback execution** (low)
+- [x] **1.3 Fix nodeContext mutation in fallback execution** (low)
   - File: `src/execution/executor.ts` (executeFallbackNode)
   - Bug: Directly mutates `state.nodeContext.$primaryError` — affects parallel executions
   - Fix: Clone state before fallback, or use spread to create new nodeContext
   - Test: Run parallel nodes where one falls back, verify other contexts unaffected
 
-- [ ] **1.4 Fix trigger validation mismatch** (low)
+- [x] **1.4 Fix trigger validation mismatch** (low)
   - File: `src/validator/structural.ts`
   - Bug: Validator expects `trigger.type` to be a string, but spec uses nested object format
   - Fix: Accept both `trigger: manual` (string) and `trigger: { manual: true }` (object)
   - Test: Validate workflows with both trigger formats
 
-- [ ] **1.5 Fix fallback node still retrying** (low)
+- [x] **1.5 Fix fallback node still retrying** (low)
   - File: `src/execution/executor.ts` (executeFallbackNode)
   - Bug: Fallback calls `executeNode()` with `defaultRetryConfig`, could infinite-loop
   - Fix: Pass `undefined` or `{ maxRetries: 0 }` for retry config in fallback
   - Test: Verify fallback node executes exactly once even if it fails
 
-- [ ] **1.6 Fix map/filter iteration variable inconsistency** (low)
+- [x] **1.6 Fix map/filter iteration variable inconsistency** (low)
   - Files: `src/runtimes/transform/filter.ts`
   - Bug: Map provides `$item, $index, $first, $last, $items` but filter only `$item, $index`
   - Fix: Add `$first`, `$last`, `$items` to filter iteration context
@@ -471,12 +471,9 @@ Batch 10 (Self-Evolution) ───────── Needs all above ──┘
 
 *Updated after each session. Newest first.*
 
-<!--
-### Session YYYY-MM-DD — Batch N: <Name>
-**Duration:** ~Xm
-**Items completed:** N.1, N.2, N.3
-**Items deferred:** N.4 (reason)
-**Learnings:** <anything new for MEMORY.md>
-**Commit:** <short hash>
-**Next:** Batch M
--->
+### Session 2026-02-09 — Batch 1: Critical Bugfixes
+**Duration:** ~10m
+**Items completed:** 1.1, 1.2, 1.3, 1.4, 1.5, 1.6
+**Items deferred:** none
+**Learnings:** Items 1.3 and 1.5 shared the same code path (executeFallbackNode) — fixed together
+**Next:** Batch 2 (Parser Expansion)

@@ -224,10 +224,22 @@ function parseTrigger(
 
   if (typeof value === 'object' && !Array.isArray(value)) {
     const obj = value as Record<string, unknown>;
-    const type = typeof obj.type === 'string' &&
-      (obj.type === 'manual' || obj.type === 'webhook' || obj.type === 'schedule')
-        ? obj.type
-        : 'manual';
+    const validTypes = ['manual', 'webhook', 'schedule'] as const;
+
+    // Check explicit { type: "manual" } format
+    let type: 'manual' | 'webhook' | 'schedule' = 'manual';
+    if (typeof obj.type === 'string' && validTypes.includes(obj.type as typeof validTypes[number])) {
+      type = obj.type as typeof validTypes[number];
+    } else {
+      // Check { manual: true } / { webhook: true } key-as-type format
+      for (const t of validTypes) {
+        if (t in obj) {
+          type = t;
+          break;
+        }
+      }
+    }
+
     const config = typeof obj.config === 'object' && obj.config !== null
       ? (obj.config as Record<string, unknown>)
       : undefined;

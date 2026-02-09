@@ -144,14 +144,17 @@ const utilityFunctions = {
  * @returns Record containing all built-in functions by name
  */
 export function getBuiltinFunctions(): Record<string, (...args: unknown[]) => unknown> {
+  // Spread array before string so stringFunctions.concat wins (string concat is more common).
+  // Expose array concat under explicit name to avoid collision.
   return {
-    ...stringFunctions,
     ...arrayFunctions,
+    ...stringFunctions,
     ...mathFunctions,
     ...timeFunctions,
     ...objectFunctions,
     ...typeFunctions,
     ...utilityFunctions,
+    array_concat: arrayFunctions.concat,
   } as Record<string, (...args: unknown[]) => unknown>;
 }
 

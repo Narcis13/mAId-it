@@ -52,12 +52,15 @@ class FilterRuntime implements NodeRuntime<FilterConfig, unknown[], unknown[]> {
     const results: unknown[] = [];
 
     for (let i = 0; i < items.length; i++) {
-      // Create item context with iteration variables
+      // Create item context with iteration variables (matches map runtime)
       const itemContext: EvalContext = {
         variables: {
           ...baseContext.variables,
           $item: items[i],
           $index: i,
+          $first: i === 0,
+          $last: i === items.length - 1,
+          $items: items,
         },
         functions: baseContext.functions,
       };

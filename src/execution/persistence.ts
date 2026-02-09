@@ -91,6 +91,26 @@ function fromPersistedState(
 }
 
 // ============================================================================
+// JSON Serialization Helpers
+// ============================================================================
+
+/**
+ * Custom JSON replacer that serializes Error objects with their fields.
+ * By default, JSON.stringify produces `{}` for Error instances.
+ */
+function errorReplacer(_key: string, value: unknown): unknown {
+  if (value instanceof Error) {
+    return {
+      name: value.name,
+      message: value.message,
+      stack: value.stack,
+      code: (value as Error & { code?: string }).code,
+    };
+  }
+  return value;
+}
+
+// ============================================================================
 // Save State
 // ============================================================================
 
@@ -112,7 +132,7 @@ export async function saveState(
   filePath: string
 ): Promise<void> {
   const persisted = toPersistedState(state);
-  const json = JSON.stringify(persisted, null, 2);
+  const json = JSON.stringify(persisted, errorReplacer, 2);
 
   // Ensure parent directory exists
   const dir = filePath.substring(0, filePath.lastIndexOf('/'));

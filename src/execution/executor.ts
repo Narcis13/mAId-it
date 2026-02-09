@@ -354,17 +354,23 @@ async function executeFallbackNode(
     throw new Error(`Fallback node not found: ${fallbackNodeId}`);
   }
 
-  // Add primary error and input to context for fallback node
-  state.nodeContext.$primaryError = primaryError.message;
-  state.nodeContext.$primaryInput = originalInput;
+  // Clone state to avoid mutating shared nodeContext during parallel execution
+  const fallbackState: ExecutionState = {
+    ...state,
+    nodeContext: {
+      ...state.nodeContext,
+      $primaryError: primaryError.message,
+      $primaryInput: originalInput,
+    },
+  };
 
   // Execute fallback node (without retry to avoid infinite loops)
   const result = await executeNode(
     fallbackNode,
     nodes,
-    state,
+    fallbackState,
     maxConcurrency,
-    defaultRetryConfig
+    undefined
   );
 
   if (result.status === 'failed') {

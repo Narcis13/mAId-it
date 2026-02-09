@@ -205,4 +205,69 @@ describe('resumeWorkflow', () => {
     const persisted = await Bun.file(checkpointPath).json();
     expect(persisted.secrets.OLD_SECRET).toBe('old-secret-value');
   });
+
+  test('re-executes unfinished nodes in current wave (wave gap fix)', async () => {
+    // Simulate wave 1 with 3 nodes: node-0 (wave 0), node-1 + node-2 (wave 1)
+    // node-1 completed, node-2 did not
+    const state = createExecutionState({
+      workflowId: 'test-workflow',
+      runId: 'wave-gap-run',
+    });
+    state.status = 'failed';
+    state.currentWave = 1;
+
+    // node-0 completed (wave 0)
+    state.nodeResults.set('node-0', {
+      status: 'success',
+      output: { data: 'wave-0' },
+      duration: 50,
+      startedAt: Date.now() - 200,
+      completedAt: Date.now() - 150,
+    });
+
+    // node-1 completed (wave 1)
+    state.nodeResults.set('node-1', {
+      status: 'success',
+      output: { data: 'wave-1-a' },
+      duration: 50,
+      startedAt: Date.now() - 150,
+      completedAt: Date.now() - 100,
+    });
+
+    // node-2 NOT completed (wave 1) — this is the gap
+
+    const checkpointPath = join(TEST_STATE_DIR, 'wave-gap.json');
+    await saveState(state, checkpointPath);
+
+    // Verify state was persisted with only 2 completed nodes
+    const persisted = await Bun.file(checkpointPath).json();
+    expect(persisted.currentWave).toBe(1);
+    expect(persisted.nodeResults.length).toBe(2);
+  });
+
+  test('skips fully completed wave on resume', async () => {
+    // Wave 0 with 1 node, fully completed
+    const state = createExecutionState({
+      workflowId: 'test-workflow',
+      runId: 'skip-wave-run',
+    });
+    state.status = 'failed';
+    state.currentWave = 0;
+
+    // node-0 completed
+    state.nodeResults.set('node-0', {
+      status: 'success',
+      output: 'done',
+      duration: 50,
+      startedAt: Date.now() - 100,
+      completedAt: Date.now() - 50,
+    });
+
+    const checkpointPath = join(TEST_STATE_DIR, 'skip-wave.json');
+    await saveState(state, checkpointPath);
+
+    const persisted = await Bun.file(checkpointPath).json();
+    expect(persisted.nodeResults.length).toBe(1);
+    expect(persisted.nodeResults[0][1].status).toBe('success');
+  });
 });

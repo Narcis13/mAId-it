@@ -291,6 +291,72 @@ describe('Error Handling', () => {
     expect(state.status).toBe('failed');
     expect(state.completedAt).toBeDefined();
   });
+
+  test('throws AggregateError when multiple nodes fail in same wave', async () => {
+    // Two independent nodes that both fail (same wave)
+    const ast = createAST([
+      {
+        type: 'source',
+        id: 'bad-1',
+        sourceType: 'unknown-type-a',
+        config: {},
+        loc: { start: { line: 1, column: 0, offset: 0 }, end: { line: 1, column: 10, offset: 10 } },
+      },
+      {
+        type: 'source',
+        id: 'bad-2',
+        sourceType: 'unknown-type-b',
+        config: {},
+        loc: { start: { line: 1, column: 0, offset: 0 }, end: { line: 1, column: 10, offset: 10 } },
+      },
+    ]);
+
+    const plan = buildExecutionPlan(ast);
+    const state = createExecutionState({ workflowId: 'test' });
+
+    try {
+      await execute(plan, state);
+      expect(true).toBe(false); // Should not reach here
+    } catch (error) {
+      // With 2 failing nodes, should get AggregateError
+      expect(error).toBeInstanceOf(AggregateError);
+      const aggError = error as AggregateError;
+      expect(aggError.errors.length).toBe(2);
+      expect(aggError.message).toContain('2 nodes failed');
+    }
+  });
+
+  test('throws single error when only one node fails in wave', async () => {
+    // One good node, one bad node in same wave
+    const ast = createAST([
+      {
+        type: 'transform',
+        id: 'good',
+        transformType: 'template',
+        config: { template: 'works' },
+        loc: { start: { line: 1, column: 0, offset: 0 }, end: { line: 1, column: 10, offset: 10 } },
+      },
+      {
+        type: 'source',
+        id: 'bad',
+        sourceType: 'unknown-type',
+        config: {},
+        loc: { start: { line: 1, column: 0, offset: 0 }, end: { line: 1, column: 10, offset: 10 } },
+      },
+    ]);
+
+    const plan = buildExecutionPlan(ast);
+    const state = createExecutionState({ workflowId: 'test' });
+
+    try {
+      await execute(plan, state);
+      expect(true).toBe(false);
+    } catch (error) {
+      // Single error should NOT be AggregateError
+      expect(error).not.toBeInstanceOf(AggregateError);
+      expect(error).toBeInstanceOf(Error);
+    }
+  });
 });
 
 // ============================================================================

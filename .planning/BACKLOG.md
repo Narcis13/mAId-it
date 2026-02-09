@@ -15,14 +15,14 @@
 | 2 | Parser Expansion | done | 7/7 | 2026-02-09 |
 | 3 | Expression Hardening | done | 6/6 | 2026-02-09 |
 | 4 | Temporal Primitives | done | 5/5 | 2026-02-09 |
-| 5 | Execution Fixes | pending | 0/5 | — |
+| 5 | Execution Fixes | done | 5/5 | 2026-02-09 |
 | 6 | Database Runtime | pending | 0/4 | — |
 | 7 | Advanced Control Flow | pending | 0/5 | — |
 | 8 | New Sink/Source Types | pending | 0/4 | — |
 | 9 | Composition & CLI | pending | 0/4 | — |
 | 10 | Self-Evolution | pending | 0/4 | — |
 
-**Overall:** 24/50 items complete
+**Overall:** 29/50 items complete
 
 ---
 
@@ -240,32 +240,32 @@ Batch 10 (Self-Evolution) ───────── Needs all above ──┘
 
 ### Items
 
-- [ ] **5.1 Fix resume wave gap** (medium)
+- [x] **5.1 Fix resume wave gap** (medium)
   - File: `src/execution/resume.ts`
   - Bug: If wave 2 had 5 nodes and 3 completed, resume skips to wave 3 (2 nodes lost)
   - Fix: Re-execute unstarted/failed nodes in the current wave before proceeding
   - Test: Partially complete wave 2, resume, verify all wave 2 nodes execute
 
-- [ ] **5.2 Fix wave-level error discarding** (low)
+- [x] **5.2 Fix wave-level error discarding** (low)
   - File: `src/execution/executor.ts` (executeWave)
   - Bug: Only first error thrown, subsequent errors silently lost
   - Fix: Collect all errors, throw `AggregateError` if multiple
   - Test: Wave with 3 nodes, 2 fail — verify both errors reported
 
-- [ ] **5.3 Add multi-input DAG dependencies** (medium)
+- [x] **5.3 Add multi-input DAG dependencies** (medium)
   - File: `src/scheduler/dag.ts`
   - Current: Nodes declare single `input` dependency
   - Add: Scan template expressions in node configs for `{{nodeId.output}}` references
   - Build edges for all detected dependencies, not just the `input` attribute
   - Prevents race conditions in diamond dependency patterns
 
-- [ ] **5.4 HTTP source: support non-JSON responses** (low)
+- [x] **5.4 HTTP source: support non-JSON responses** (low)
   - File: `src/runtimes/http/source.ts`
   - Current: Rejects anything that isn't JSON
   - Add: Content-type detection — `text/plain` → string, `text/xml` → string, `application/json` → parsed
   - Fallback: If no content-type, try JSON parse, then return as string
 
-- [ ] **5.5 File path traversal hardening** (low)
+- [x] **5.5 File path traversal hardening** (low)
   - File: `src/runtimes/file/path.ts`
   - Current: String-based `../` check (bypassable with encoding)
   - Fix: `path.resolve()` the final path, check it's within allowed base directory
@@ -470,6 +470,13 @@ Batch 10 (Self-Evolution) ───────── Needs all above ──┘
 ## Session Log
 
 *Updated after each session. Newest first.*
+
+### Session 2026-02-09 — Batch 5: Execution Fixes
+**Duration:** ~8m
+**Items completed:** 5.1, 5.2, 5.3, 5.4, 5.5
+**Items deferred:** none
+**Learnings:** Resume wave gap was a simple `>` vs `>=` filter, but also needed to filter out already-completed nodes from the current wave. AggregateError is a built-in JS class — no imports needed. DAG multi-input scanning uses `extractTemplateSegments` from the expression parser to find `{{nodeId.output}}` references in config values. Path traversal hardening uses `path.resolve()` + startsWith check against base directory — catches URL-encoded traversals, null bytes, and backslash variants. HTTP source content-type detection falls back to try-JSON-then-text when content-type is missing/unknown.
+**Next:** Batch 6 (Database Runtime) or Batch 7/8 (all independent)
 
 ### Session 2026-02-09 — Batch 4: Temporal Primitives
 **Duration:** ~8m

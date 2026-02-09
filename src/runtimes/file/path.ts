@@ -5,6 +5,7 @@
  * and format detection.
  */
 
+import { resolve as pathResolve } from 'path';
 import { evaluateTemplateInContext } from '../../execution';
 import { PathTraversalError } from '../errors';
 import type { ExecutionState } from '../../execution';
@@ -16,30 +17,51 @@ import type { ExecutionState } from '../../execution';
 /**
  * Validate a path for security concerns.
  *
- * Blocks:
- * - Path traversal (../ or ..\)
+ * Uses path.resolve() to normalize the path and verifies the resolved path
+ * stays within the allowed base directory. This catches:
+ * - Path traversal (../, ..\, URL-encoded variants like ..%2F)
  * - Absolute paths (starting with / or Windows drive like C:\)
+ * - Null byte injection
  *
- * @param path - The path to validate
+ * @param filePath - The path to validate
+ * @param baseDir - Base directory to constrain paths within (defaults to cwd)
  * @throws PathTraversalError if path is unsafe
  */
-export function validatePath(path: string): void {
-  // Normalize backslashes to forward slashes for consistent checking
-  const normalized = path.replace(/\\/g, '/');
+export function validatePath(filePath: string, baseDir?: string): void {
+  const base = baseDir ?? process.cwd();
 
-  // Check for path traversal
-  if (normalized.includes('../') || path.includes('..\\')) {
-    throw new PathTraversalError(`Path traversal not allowed: ${path}`, path);
+  // Block null bytes
+  if (filePath.includes('\0')) {
+    throw new PathTraversalError(`Path traversal not allowed: ${filePath}`, filePath);
   }
 
-  // Check for absolute paths (Unix or Windows)
-  if (normalized.startsWith('/')) {
-    throw new PathTraversalError(`Path traversal not allowed: ${path}`, path);
+  // URL-decode the path to catch encoded traversals like ..%2F
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(filePath);
+  } catch {
+    decoded = filePath;
   }
+
+  // Block null bytes in decoded form too
+  if (decoded.includes('\0')) {
+    throw new PathTraversalError(`Path traversal not allowed: ${filePath}`, filePath);
+  }
+
+  // Normalize backslashes to forward slashes
+  const normalized = decoded.replace(/\\/g, '/');
 
   // Check for Windows absolute paths (e.g., C:\, D:\)
-  if (/^[A-Za-z]:[\\/]/.test(path)) {
-    throw new PathTraversalError(`Path traversal not allowed: ${path}`, path);
+  if (/^[A-Za-z]:[\\/]/.test(decoded)) {
+    throw new PathTraversalError(`Path traversal not allowed: ${filePath}`, filePath);
+  }
+
+  // Resolve to absolute path and verify it stays within base
+  const resolvedBase = pathResolve(base);
+  const resolved = pathResolve(base, normalized);
+
+  if (!resolved.startsWith(resolvedBase + '/') && resolved !== resolvedBase) {
+    throw new PathTraversalError(`Path traversal not allowed: ${filePath}`, filePath);
   }
 }
 
@@ -54,11 +76,16 @@ export function validatePath(path: string): void {
  *
  * @param template - Path template with optional {{expressions}}
  * @param state - The current execution state
+ * @param baseDir - Base directory to constrain paths within (defaults to cwd)
  * @returns Resolved path string
  * @throws PathTraversalError if resolved path is unsafe
  * @throws ExpressionError if template evaluation fails
  */
-export function resolveTemplatePath(template: string, state: ExecutionState): string {
+export function resolveTemplatePath(
+  template: string,
+  state: ExecutionState,
+  baseDir?: string
+): string {
   // Resolve template expressions
   const resolved = evaluateTemplateInContext(template, state);
 
@@ -71,7 +98,7 @@ export function resolveTemplatePath(template: string, state: ExecutionState): st
   }
 
   // Validate path security
-  validatePath(resolved);
+  validatePath(resolved, baseDir);
 
   return resolved;
 }

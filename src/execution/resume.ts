@@ -55,10 +55,27 @@ export async function resumeWorkflow(
   // Build full execution plan from AST
   const fullPlan = buildExecutionPlan(ast);
 
-  // Filter waves to only those after the last completed wave
+  // Include current wave (>= not >) to re-execute unfinished nodes
   const remainingWaves = fullPlan.waves.filter(
-    (wave) => wave.waveNumber > state.currentWave
+    (wave) => wave.waveNumber >= state.currentWave
   );
+
+  // For the current wave, filter out already-completed nodes
+  if (remainingWaves.length > 0 && remainingWaves[0].waveNumber === state.currentWave) {
+    const currentWave = remainingWaves[0];
+    const unfinishedNodeIds = currentWave.nodeIds.filter((nodeId) => {
+      const result = state.nodeResults.get(nodeId);
+      return !result || result.status !== 'success';
+    });
+
+    if (unfinishedNodeIds.length === 0) {
+      // All nodes in current wave completed, skip it
+      remainingWaves.shift();
+    } else {
+      // Replace with filtered wave containing only unfinished nodes
+      remainingWaves[0] = { ...currentWave, nodeIds: unfinishedNodeIds };
+    }
+  }
 
   // Create resume plan with remaining waves only
   const resumePlan: ExecutionPlan = {

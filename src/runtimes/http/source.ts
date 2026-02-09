@@ -153,18 +153,23 @@ class HttpSourceRuntime implements NodeRuntime<HttpSourceConfig, void, unknown> 
       );
     }
 
-    // Verify JSON content type
+    // Parse response based on content type
     const contentType = response.headers.get('content-type') || '';
-    if (!contentType.includes('application/json')) {
-      throw new HttpError(
-        `Expected JSON response, got ${contentType || 'unknown content type'}`,
-        response.status,
-        await response.text()
-      );
-    }
+    let data: unknown;
 
-    // Parse JSON response
-    const data = await response.json();
+    if (contentType.includes('application/json')) {
+      data = await response.json();
+    } else if (contentType.startsWith('text/') || contentType.includes('xml')) {
+      data = await response.text();
+    } else {
+      // No content-type or unknown: try JSON parse, fall back to text
+      const text = await response.text();
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = text;
+      }
+    }
 
     // Apply JMESPath extraction if specified
     if (config.extract) {

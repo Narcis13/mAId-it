@@ -279,6 +279,113 @@ describe('buildExecutionPlan', () => {
 // Constants Tests
 // ============================================================================
 
+// ============================================================================
+// Multi-Input DAG Dependency Tests
+// ============================================================================
+
+describe('multi-input DAG dependencies', () => {
+  test('detects template expression references in config', () => {
+    const nodes: NodeAST[] = [
+      createSourceNode('a'),
+      createSourceNode('b'),
+      {
+        type: 'transform',
+        id: 'c',
+        input: 'a',
+        transformType: 'template',
+        config: { template: '{{a.output}} and {{b.output}}' },
+        loc: { start: { line: 1, column: 0, offset: 0 }, end: { line: 1, column: 10, offset: 10 } },
+      } as any,
+    ];
+
+    const graph = buildDependencyGraph(nodes);
+    const cDeps = graph.get('c')!;
+
+    // Should have both a (from input) and b (from template reference)
+    expect(cDeps.has('a')).toBe(true);
+    expect(cDeps.has('b')).toBe(true);
+  });
+
+  test('diamond pattern gets correct waves with template references', () => {
+    // a -> b, a -> c (via input), d references both b and c in template
+    const nodes: NodeAST[] = [
+      createSourceNode('a'),
+      createSourceNode('b', 'a'),
+      createSourceNode('c', 'a'),
+      {
+        type: 'transform',
+        id: 'd',
+        input: 'b',
+        transformType: 'template',
+        config: { template: '{{b.output}} + {{c.output}}' },
+        loc: { start: { line: 1, column: 0, offset: 0 }, end: { line: 1, column: 10, offset: 10 } },
+      } as any,
+    ];
+
+    const graph = buildDependencyGraph(nodes);
+    const waves = computeWaves(nodes, graph);
+
+    // Wave 0: a
+    // Wave 1: b, c
+    // Wave 2: d (depends on both b and c)
+    expect(waves.length).toBe(3);
+    expect(waves[0].nodeIds).toEqual(['a']);
+    expect(waves[1].nodeIds.sort()).toEqual(['b', 'c']);
+    expect(waves[2].nodeIds).toEqual(['d']);
+  });
+
+  test('does not add self-dependency from config', () => {
+    const nodes: NodeAST[] = [
+      {
+        type: 'transform',
+        id: 'self-ref',
+        transformType: 'template',
+        config: { template: '{{self-ref.output}}' },
+        loc: { start: { line: 1, column: 0, offset: 0 }, end: { line: 1, column: 10, offset: 10 } },
+      } as any,
+    ];
+
+    const graph = buildDependencyGraph(nodes);
+    expect(graph.get('self-ref')!.size).toBe(0);
+  });
+
+  test('scans nested config objects', () => {
+    const nodes: NodeAST[] = [
+      createSourceNode('data-source'),
+      {
+        type: 'transform',
+        id: 'processor',
+        transformType: 'template',
+        config: {
+          nested: {
+            deep: { value: '{{data-source.output}}' },
+          },
+        },
+        loc: { start: { line: 1, column: 0, offset: 0 }, end: { line: 1, column: 10, offset: 10 } },
+      } as any,
+    ];
+
+    const graph = buildDependencyGraph(nodes);
+    expect(graph.get('processor')!.has('data-source')).toBe(true);
+  });
+
+  test('ignores plain strings without template expressions', () => {
+    const nodes: NodeAST[] = [
+      createSourceNode('a'),
+      {
+        type: 'transform',
+        id: 'b',
+        transformType: 'template',
+        config: { template: 'just a plain string' },
+        loc: { start: { line: 1, column: 0, offset: 0 }, end: { line: 1, column: 10, offset: 10 } },
+      } as any,
+    ];
+
+    const graph = buildDependencyGraph(nodes);
+    expect(graph.get('b')!.size).toBe(0);
+  });
+});
+
 describe('Constants', () => {
   test('DEFAULT_MAX_CONCURRENCY is 10', () => {
     expect(DEFAULT_MAX_CONCURRENCY).toBe(10);

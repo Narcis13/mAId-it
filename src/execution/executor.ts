@@ -202,9 +202,12 @@ async function executeWave(
 
   await Promise.all(executions);
 
-  // Fail-fast: throw first error encountered
-  if (errors.length > 0) {
+  // Surface all errors from the wave
+  if (errors.length === 1) {
     throw errors[0];
+  }
+  if (errors.length > 1) {
+    throw new AggregateError(errors, `${errors.length} nodes failed in wave`);
   }
 }
 

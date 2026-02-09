@@ -18,11 +18,11 @@
 | 5 | Execution Fixes | done | 5/5 | 2026-02-09 |
 | 6 | Database Runtime | done | 4/4 | 2026-02-09 |
 | 7 | Advanced Control Flow | done | 5/5 | 2026-02-09 |
-| 8 | New Sink/Source Types | pending | 0/4 | — |
+| 8 | New Sink/Source Types | done | 4/4 | 2026-02-09 |
 | 9 | Composition & CLI | pending | 0/4 | — |
 | 10 | Self-Evolution | pending | 0/4 | — |
 
-**Overall:** 38/50 items complete
+**Overall:** 42/50 items complete
 
 ---
 
@@ -362,25 +362,25 @@ Batch 10 (Self-Evolution) ───────── Needs all above ──┘
 
 ### Items
 
-- [ ] **8.1 Email sink runtime (SendGrid)** (medium)
+- [x] **8.1 Email sink runtime (SendGrid)** (medium)
   - File: `src/runtimes/email/sink.ts` (new)
   - SendGrid API integration (HTTP-based, no SDK needed)
   - Config: `api_key` (secret ref), `from`, `to`, `subject`, `html`/`text`
   - Template resolution for all fields
   - Register as `email:sink`
 
-- [ ] **8.2 CSV/YAML file format support** (low)
+- [x] **8.2 CSV/YAML file format support** (low)
   - File: `src/runtimes/file/source.ts`, `src/runtimes/file/sink.ts`
   - CSV: Use Bun's text parsing or simple split-based CSV
   - YAML: Use `Bun.YAML` (already available in parser)
   - Add `format: csv | yaml` to file source/sink
 
-- [ ] **8.3 HTTP PUT/DELETE methods** (low)
+- [x] **8.3 HTTP PUT/DELETE methods** (low)
   - File: `src/runtimes/http/source.ts`, `src/runtimes/http/sink.ts`
   - Source: Add PUT, DELETE to allowed methods
   - Sink: Add DELETE to allowed methods (POST, PUT, PATCH already exist)
 
-- [ ] **8.4 OAuth2 authentication** (high)
+- [x] **8.4 OAuth2 authentication** (high)
   - File: `src/runtimes/http/auth.ts` (new)
   - OAuth2 client credentials flow: token endpoint, client ID/secret
   - Token caching with automatic refresh on 401
@@ -470,6 +470,13 @@ Batch 10 (Self-Evolution) ───────── Needs all above ──┘
 ## Session Log
 
 *Updated after each session. Newest first.*
+
+### Session 2026-02-09 — Batch 8: New Sink/Source Types
+**Duration:** ~8m
+**Items completed:** 8.1, 8.2, 8.3, 8.4
+**Items deferred:** none
+**Learnings:** `Bun.YAML.parse`/`Bun.YAML.stringify` are built-in — no package needed. CSV parsing uses a character-walking parser to handle quoted fields with commas/escaped quotes. OAuth2 client credentials flow uses `URLSearchParams` for the token request body (form-encoded per spec). Token caching uses a Map keyed by `tokenUrl::clientId` with 60-second safety margin before expiry. HTTP buildAuthHeaders became async to support OAuth2 token fetching. Both HTTP source and sink now retry on 401 with a fresh token when using OAuth2. The `detectFormat` utility now returns `'csv' | 'yaml' | 'json' | 'text'` — existing test needed updating. Email sink validator checks for `api_key` and `to` required fields.
+**Next:** Batch 9 (Composition & CLI) or Batch 10 (Self-Evolution)
 
 ### Session 2026-02-09 — Batch 7: Advanced Control Flow
 **Duration:** ~8m

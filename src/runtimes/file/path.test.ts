@@ -64,9 +64,17 @@ describe('detectFormat', () => {
     expect(detectFormat('PATH/TO/FILE.JSON')).toBe('json');
   });
 
-  test('defaults to text for non-JSON', () => {
+  test('detects CSV from extension', () => {
+    expect(detectFormat('data.csv')).toBe('csv');
+  });
+
+  test('detects YAML from extension', () => {
+    expect(detectFormat('config.yaml')).toBe('yaml');
+    expect(detectFormat('config.yml')).toBe('yaml');
+  });
+
+  test('defaults to text for unknown extensions', () => {
     expect(detectFormat('readme.txt')).toBe('text');
-    expect(detectFormat('data.csv')).toBe('text');
     expect(detectFormat('noext')).toBe('text');
   });
 });

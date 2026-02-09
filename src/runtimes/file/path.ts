@@ -111,8 +111,12 @@ export function resolveTemplatePath(
  * Detect file format based on file extension.
  *
  * @param path - File path to analyze
- * @returns 'json' for .json files, 'text' otherwise
+ * @returns Detected format based on extension
  */
-export function detectFormat(path: string): 'json' | 'text' {
-  return path.toLowerCase().endsWith('.json') ? 'json' : 'text';
+export function detectFormat(path: string): 'json' | 'csv' | 'yaml' | 'text' {
+  const lower = path.toLowerCase();
+  if (lower.endsWith('.json')) return 'json';
+  if (lower.endsWith('.csv')) return 'csv';
+  if (lower.endsWith('.yaml') || lower.endsWith('.yml')) return 'yaml';
+  return 'text';
 }

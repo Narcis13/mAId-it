@@ -266,7 +266,7 @@ function validateTransformNode(node: TransformNode): ValidationError[] {
 function validateSinkNode(node: SinkNode): ValidationError[] {
   const errors: ValidationError[] = [];
 
-  const validSinkTypes = ['http', 'file', 'database'];
+  const validSinkTypes = ['http', 'file', 'database', 'email'];
   if (!validSinkTypes.includes(node.sinkType)) {
     errors.push(
       createError(
@@ -297,6 +297,30 @@ function validateSinkNode(node: SinkNode): ValidationError[] {
           `Database sink "${node.id}" requires a "table" attribute`,
           node.loc,
           ['Add table="my_table" to specify the target table']
+        )
+      );
+    }
+  }
+
+  // Email sinks require api_key, from, to, subject
+  if (node.sinkType === 'email') {
+    if (!node.config.api_key) {
+      errors.push(
+        createError(
+          'VALID_MISSING_REQUIRED_FIELD',
+          `Email sink "${node.id}" requires an "api_key" attribute`,
+          node.loc,
+          ['Add api_key="{{$secrets.SENDGRID_API_KEY}}" or similar']
+        )
+      );
+    }
+    if (!node.config.to) {
+      errors.push(
+        createError(
+          'VALID_MISSING_REQUIRED_FIELD',
+          `Email sink "${node.id}" requires a "to" attribute`,
+          node.loc,
+          ['Add to="recipient@example.com"']
         )
       );
     }

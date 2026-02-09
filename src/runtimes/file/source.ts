@@ -8,6 +8,8 @@
 import type { NodeRuntime, FileSourceConfig, ExecutionParams } from '../types';
 import { FileError } from '../errors';
 import { resolveTemplatePath, detectFormat } from './path';
+import { parseCSV } from './csv';
+import { parseYAML } from './yaml';
 
 // ============================================================================
 // File Source Runtime
@@ -56,12 +58,21 @@ class FileSourceRuntime implements NodeRuntime<FileSourceConfig, void, unknown> 
       : config.format;
 
     // Read file based on format
-    // Bun.file().json() is optimized - faster than .text() + JSON.parse()
     if (format === 'json') {
       return file.json();
     }
 
-    return file.text();
+    const text = await file.text();
+
+    if (format === 'csv') {
+      return parseCSV(text);
+    }
+
+    if (format === 'yaml') {
+      return parseYAML(text);
+    }
+
+    return text;
   }
 }
 

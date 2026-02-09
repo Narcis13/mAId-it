@@ -70,13 +70,21 @@ export interface RuntimeExecuteResult<T = unknown> {
  */
 export interface AuthConfig {
   /** Authentication type */
-  type: 'bearer' | 'basic' | 'none';
+  type: 'bearer' | 'basic' | 'oauth2' | 'none';
   /** Bearer token (may be secret reference like $secrets.API_TOKEN) */
   token?: string;
   /** Username for basic auth */
   username?: string;
   /** Password for basic auth */
   password?: string;
+  /** OAuth2 token endpoint URL */
+  token_url?: string;
+  /** OAuth2 client ID */
+  client_id?: string;
+  /** OAuth2 client secret */
+  client_secret?: string;
+  /** OAuth2 scopes (space-separated) */
+  scope?: string;
 }
 
 // ============================================================================
@@ -90,7 +98,7 @@ export interface HttpSourceConfig {
   /** URL to fetch (may contain template expressions) */
   url: string;
   /** HTTP method */
-  method: 'GET' | 'POST';
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE';
   /** Additional headers */
   headers?: Record<string, string>;
   /** Query parameters */
@@ -112,7 +120,7 @@ export interface HttpSinkConfig {
   /** URL to send to (may contain template expressions) */
   url: string;
   /** HTTP method (default: POST) */
-  method?: 'POST' | 'PUT' | 'PATCH';
+  method?: 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   /** Additional headers */
   headers?: Record<string, string>;
   /** Authentication configuration */
@@ -185,10 +193,46 @@ export interface DatabaseSinkResult {
 // File Configuration Types
 // ============================================================================
 
+// ============================================================================
+// Email Configuration Types
+// ============================================================================
+
+/**
+ * Configuration for email sink nodes (sending email via SendGrid).
+ */
+export interface EmailSinkConfig {
+  /** SendGrid API key (may be secret reference) */
+  api_key: string;
+  /** Sender email address */
+  from: string;
+  /** Recipient email address(es) — comma-separated or template */
+  to: string;
+  /** Email subject (may contain template expressions) */
+  subject: string;
+  /** HTML body (may contain template expressions) */
+  html?: string;
+  /** Plain text body (may contain template expressions) */
+  text?: string;
+}
+
+/**
+ * Result returned by email sink operations.
+ */
+export interface EmailSinkResult {
+  /** HTTP status code from SendGrid */
+  status: number;
+  /** Message ID from SendGrid (if available) */
+  messageId?: string;
+}
+
+// ============================================================================
+// File Configuration Types
+// ============================================================================
+
 /**
  * File format for reading/writing.
  */
-export type FileFormat = 'json' | 'text' | 'auto';
+export type FileFormat = 'json' | 'text' | 'csv' | 'yaml' | 'auto';
 
 /**
  * Configuration for file source nodes (reading files).
@@ -207,7 +251,7 @@ export interface FileSinkConfig {
   /** File path (may contain template expressions) */
   path: string;
   /** File format */
-  format?: 'json' | 'text';
+  format?: 'json' | 'text' | 'csv' | 'yaml';
   /** Pretty-print JSON (default: true) */
   pretty?: boolean;
   /** Create parent directories if needed (default: true) */

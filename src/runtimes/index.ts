@@ -62,6 +62,9 @@ import './temporal/index.ts';
 // Side-effect import: auto-registers Database runtimes
 import './database/index.ts';
 
+// Side-effect import: auto-registers Email runtimes
+import './email/index.ts';
+
 // Re-export HTTP runtimes for convenience
 export { httpSourceRuntime, httpSinkRuntime } from './http/index.ts';
 
@@ -127,3 +130,12 @@ export { databaseSourceRuntime, databaseSinkRuntime, createDatabaseConnection, p
 // Re-export Database types
 export type { DatabaseSourceConfig, DatabaseSinkConfig, DatabaseSinkResult } from './types.ts';
 export type { DatabaseConnection } from './database/index.ts';
+
+// Re-export Email runtimes for convenience
+export { emailSinkRuntime } from './email/index.ts';
+
+// Re-export Email types
+export type { EmailSinkConfig, EmailSinkResult } from './types.ts';
+
+// Re-export HTTP auth utilities
+export { getOAuth2Token, clearOAuth2Token, clearAllOAuth2Tokens } from './http/auth.ts';

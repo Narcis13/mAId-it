@@ -27,3 +27,7 @@ export { fileSinkRuntime } from './sink';
 
 // Export path utilities
 export { resolveTemplatePath, validatePath, detectFormat } from './path';
+
+// Export CSV/YAML utilities
+export { parseCSV, toCSV } from './csv';
+export { parseYAML, toYAML } from './yaml';

@@ -9,6 +9,8 @@ import { mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import type { NodeRuntime, FileSinkConfig, FileSinkResult, ExecutionParams } from '../types';
 import { resolveTemplatePath } from './path';
+import { toCSV } from './csv';
+import { toYAML } from './yaml';
 
 // ============================================================================
 // File Sink Runtime
@@ -57,12 +59,14 @@ class FileSinkRuntime implements NodeRuntime<FileSinkConfig, unknown, FileSinkRe
     let content: string;
     const isObject = input !== null && typeof input === 'object';
 
-    if (config.format === 'json' || (config.format === undefined && isObject)) {
-      // Format as JSON (pretty by default)
+    if (config.format === 'csv') {
+      content = toCSV(input);
+    } else if (config.format === 'yaml') {
+      content = toYAML(input);
+    } else if (config.format === 'json' || (config.format === undefined && isObject)) {
       const indent = config.pretty !== false ? 2 : 0;
       content = JSON.stringify(input, null, indent);
     } else {
-      // Format as text
       content = String(input);
     }
 

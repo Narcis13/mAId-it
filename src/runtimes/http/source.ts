@@ -14,6 +14,7 @@ import type { NodeRuntime, ExecutionParams, HttpSourceConfig, AuthConfig } from 
 import { HttpError } from '../errors.ts';
 import { evaluateTemplateInContext } from '../../execution/index.ts';
 import type { ExecutionState } from '../../execution/types.ts';
+import { getOAuth2Token, clearOAuth2Token } from './auth.ts';
 
 // ============================================================================
 // Helper Functions
@@ -45,16 +46,15 @@ function resolveRecord(
 /**
  * Build authentication headers based on auth configuration.
  */
-function buildAuthHeaders(
+async function buildAuthHeaders(
   auth: AuthConfig | undefined,
   state: ExecutionState
-): Record<string, string> {
+): Promise<Record<string, string>> {
   if (!auth || auth.type === 'none') {
     return {};
   }
 
   if (auth.type === 'bearer' && auth.token) {
-    // Resolve the token (may be a template like {{$secrets.API_TOKEN}})
     const token = resolveValue(auth.token, state);
     return { Authorization: `Bearer ${token}` };
   }
@@ -64,6 +64,18 @@ function buildAuthHeaders(
     const password = resolveValue(auth.password, state);
     const credentials = btoa(`${username}:${password}`);
     return { Authorization: `Basic ${credentials}` };
+  }
+
+  if (auth.type === 'oauth2') {
+    const resolvedAuth: AuthConfig = {
+      ...auth,
+      token_url: auth.token_url ? resolveValue(auth.token_url, state) : undefined,
+      client_id: auth.client_id ? resolveValue(auth.client_id, state) : undefined,
+      client_secret: auth.client_secret ? resolveValue(auth.client_secret, state) : undefined,
+      scope: auth.scope ? resolveValue(auth.scope, state) : undefined,
+    };
+    const token = await getOAuth2Token(resolvedAuth);
+    return { Authorization: `Bearer ${token}` };
   }
 
   return {};
@@ -122,7 +134,7 @@ class HttpSourceRuntime implements NodeRuntime<HttpSourceConfig, void, unknown> 
 
     // Build headers
     const resolvedHeaders = resolveRecord(config.headers, state);
-    const authHeaders = buildAuthHeaders(config.auth, state);
+    const authHeaders = await buildAuthHeaders(config.auth, state);
     const headers = { ...resolvedHeaders, ...authHeaders };
 
     // Build request options
@@ -132,8 +144,8 @@ class HttpSourceRuntime implements NodeRuntime<HttpSourceConfig, void, unknown> 
       signal: AbortSignal.timeout(timeout),
     };
 
-    // Add body for POST requests
-    if (config.method === 'POST' && config.body !== undefined) {
+    // Add body for POST/PUT requests
+    if ((config.method === 'POST' || config.method === 'PUT') && config.body !== undefined) {
       options.body = JSON.stringify(config.body);
       if (!headers['Content-Type']) {
         headers['Content-Type'] = 'application/json';
@@ -141,7 +153,18 @@ class HttpSourceRuntime implements NodeRuntime<HttpSourceConfig, void, unknown> 
     }
 
     // Make the request
-    const response = await fetch(url, options);
+    let response = await fetch(url, options);
+
+    // OAuth2 token refresh on 401
+    if (response.status === 401 && config.auth?.type === 'oauth2' && config.auth.token_url && config.auth.client_id) {
+      clearOAuth2Token(
+        resolveValue(config.auth.token_url, state),
+        resolveValue(config.auth.client_id, state)
+      );
+      const newAuthHeaders = await buildAuthHeaders(config.auth, state);
+      const retryHeaders = { ...resolvedHeaders, ...newAuthHeaders };
+      response = await fetch(url, { ...options, headers: retryHeaders });
+    }
 
     // Check for HTTP errors
     if (!response.ok) {
